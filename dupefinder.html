@@ -5,356 +5,314 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dupe Finder</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&family=Courier+Prime:wght@400;700&display=swap');
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --bg:        #0e0e0e;
-    --surface:   #161616;
-    --border:    #2a2a2a;
-    --border2:   #333;
-    --text:      #d4d4d4;
-    --muted:     #666;
-    --accent:    #e8c84a;
-    --accent2:   #c8a830;
-    --danger:    #e05a4e;
-    --ok:        #5ab88a;
-    --mono:      'IBM Plex Mono', monospace;
-    --sans:      'IBM Plex Sans', sans-serif;
-  }
+/* ── Themes ── */
+[data-theme="dark"] {
+  --bg:#0e0e0e; --surface:#161616; --surface2:#131313;
+  --border:#2a2a2a; --border2:#333;
+  --text:#d4d4d4; --muted:#666;
+  --accent:#e8c84a; --accent2:#c8a830;
+  --accent-bg:#2a1f00; --accent-bd:#3d2e00;
+  --danger:#e05a4e; --ok:#5ab88a;
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+  --radius:4px; --dz-hover:#1a1a10; --gh-hover:#181818; --fr-hover:#1a1a1a;
+  --progress-h:2px; --btn-r:3px;
+}
+[data-theme="terminal"] {
+  --bg:#020d00; --surface:#050f00; --surface2:#040d00;
+  --border:#0d2900; --border2:#174400;
+  --text:#00cc00; --muted:#2d6600;
+  --accent:#00ff41; --accent2:#00cc33;
+  --accent-bg:#001a00; --accent-bd:#004400;
+  --danger:#ff3300; --ok:#00ff99;
+  --mono:'Courier Prime','Courier New',monospace; --sans:'Courier Prime','Courier New',monospace;
+  --radius:0px; --dz-hover:#071200; --gh-hover:#071200; --fr-hover:#071200;
+  --progress-h:4px; --btn-r:0px;
+}
+[data-theme="y2k"] {
+  --bg:#008080; --surface:#d4d0c8; --surface2:#c8c4bc;
+  --border:#808080; --border2:#404040;
+  --text:#000000; --muted:#444444;
+  --accent:#000080; --accent2:#0000aa;
+  --accent-bg:#000080; --accent-bd:#000040;
+  --danger:#cc0000; --ok:#006600;
+  --mono:'Courier New',monospace; --sans:'Tahoma','MS Sans Serif','Arial',sans-serif;
+  --radius:0px; --dz-hover:#bdb9b0; --gh-hover:#0000aa; --fr-hover:#eeecea;
+  --progress-h:16px; --btn-r:2px;
+}
+[data-theme="light"] {
+  --bg:#f5f5f4; --surface:#ffffff; --surface2:#fafaf9;
+  --border:#e2e0dd; --border2:#d1cec9;
+  --text:#1c1917; --muted:#78716c;
+  --accent:#1d4ed8; --accent2:#1e40af;
+  --accent-bg:#eff6ff; --accent-bd:#bfdbfe;
+  --danger:#dc2626; --ok:#16a34a;
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+  --radius:6px; --dz-hover:#eff6ff; --gh-hover:#f8fafc; --fr-hover:#f8fafc;
+  --progress-h:3px; --btn-r:4px;
+}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 14px;
-    min-height: 100vh;
-    padding: 0;
-  }
+/* ── Base ── */
+body { background:var(--bg); color:var(--text); font-family:var(--sans); font-size:14px; min-height:100vh; }
+[data-theme="terminal"] body::after {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);
+}
+[data-theme="y2k"] body { padding:16px; }
 
-  /* ── Header ── */
-  header {
-    padding: 28px 40px 22px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: baseline;
-    gap: 16px;
-  }
+/* ── Theme bar ── */
+#theme-bar {
+  display:flex; align-items:center; gap:8px; padding:6px 40px;
+  background:var(--surface); border-bottom:1px solid var(--border);
+  font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:0.06em;
+}
+[data-theme="terminal"] #theme-bar { background:#000; border-bottom-color:var(--border2); }
+[data-theme="y2k"] #theme-bar { background:#000080; border-bottom:2px solid #000040; color:#fff; font-family:'Tahoma',sans-serif; }
+[data-theme="light"] #theme-bar { background:#f0f0ef; }
 
-  header h1 {
-    font-family: var(--mono);
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--accent);
-  }
+.theme-btn {
+  font-family:var(--mono); font-size:10px; padding:3px 10px;
+  border-radius:var(--btn-r); cursor:pointer; border:1px solid var(--border2);
+  background:transparent; color:var(--muted); letter-spacing:0.05em; text-transform:uppercase; transition:all 0.1s;
+}
+.theme-btn:hover,.theme-btn.active { background:var(--accent); border-color:var(--accent); color:var(--bg); }
+[data-theme="y2k"] .theme-btn {
+  font-family:'Tahoma',sans-serif; font-size:11px; text-transform:none; letter-spacing:0;
+  border:2px outset #e0ddd8; background:#d4d0c8; color:#000; padding:2px 10px;
+}
+[data-theme="y2k"] .theme-btn.active,[data-theme="y2k"] .theme-btn:hover { background:#000080; color:#fff; border-style:inset; }
 
-  header span {
-    font-size: 12px;
-    color: var(--muted);
-    font-family: var(--mono);
-  }
+/* ── Y2K window ── */
+#y2k-window { display:none; max-width:960px; margin:0 auto; border:2px outset #e0ddd8; background:#d4d0c8; }
+[data-theme="y2k"] #y2k-window { display:block; }
+[data-theme="y2k"] header,[data-theme="y2k"] #main-normal { display:none; }
 
-  /* ── Main layout ── */
-  main {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 36px 40px;
-  }
+#y2k-titlebar {
+  background:linear-gradient(90deg,#000080 0%,#1084d0 100%); color:#fff;
+  font-family:'Tahoma',sans-serif; font-size:11px; font-weight:bold;
+  padding:3px 4px 3px 6px; display:flex; justify-content:space-between; align-items:center; user-select:none;
+}
+.win-btns { display:flex; gap:2px; }
+.win-btn { width:16px; height:14px; background:#d4d0c8; border:1px outset #e0ddd8; font-size:9px; line-height:14px; text-align:center; color:#000; cursor:default; }
 
-  /* ── Drop zone ── */
-  #dropzone {
-    border: 1px dashed var(--border2);
-    border-radius: 4px;
-    padding: 48px 40px;
-    text-align: center;
-    cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
-    position: relative;
-    background: var(--surface);
-  }
+/* ── Y2K menubar + dropdowns ── */
+#y2k-menubar {
+  background:#d4d0c8; border-bottom:1px solid #808080;
+  padding:2px 4px; font-family:'Tahoma',sans-serif; font-size:11px;
+  display:flex; gap:2px; user-select:none; position:relative; z-index:100;
+}
+.y2k-menu { position:relative; display:inline-block; }
+.y2k-menu-label { padding:2px 8px; cursor:default; display:inline-block; }
+.y2k-menu-label:hover,.y2k-menu-label.open { background:#000080; color:#fff; }
 
-  #dropzone:hover,
-  #dropzone.dragover {
-    border-color: var(--accent);
-    background: #1a1a10;
-  }
+.y2k-dropdown {
+  display:none; position:absolute; top:100%; left:0;
+  background:#d4d0c8; border:2px outset #e0ddd8; border-top:none;
+  min-width:200px; z-index:500; box-shadow:2px 2px 4px rgba(0,0,0,0.4);
+  font-family:'Tahoma',sans-serif; font-size:11px;
+}
+.y2k-dropdown.open { display:block; }
+.y2k-drop-item { padding:4px 20px 4px 24px; cursor:default; white-space:nowrap; color:#000; }
+.y2k-drop-item:hover { background:#000080; color:#fff; }
+.y2k-drop-dim { color:#888; }
+.y2k-drop-dim:hover { background:#d4d0c8 !important; color:#888 !important; }
+.y2k-drop-check { padding-left:8px; }
+.y2k-drop-sep { height:1px; background:#808080; margin:3px 4px; border-bottom:1px solid #fff; }
 
-  #dropzone input[type="file"] {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    cursor: pointer;
-    width: 100%;
-    height: 100%;
-  }
+#y2k-inner { padding:12px 16px; }
+#y2k-statusbar {
+  background:#d4d0c8; border-top:1px solid #808080;
+  padding:2px 8px; font-family:'Tahoma',sans-serif; font-size:10px; color:#444;
+  display:flex; gap:16px; margin-top:8px;
+}
+.y2k-status-pane { border:1px inset #808080; padding:1px 6px; flex:1; }
 
-  #dropzone-label {
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--muted);
-    pointer-events: none;
-  }
+/* ── Y2K modal ── */
+#y2k-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3);
+  z-index:2000; align-items:center; justify-content:center;
+}
+#y2k-overlay.open { display:flex; }
+#y2k-dialog {
+  background:#d4d0c8; border:2px outset #e0ddd8;
+  min-width:300px; max-width:420px; box-shadow:4px 4px 8px rgba(0,0,0,0.5);
+  font-family:'Tahoma',sans-serif; font-size:11px;
+}
+#y2k-dialog-titlebar {
+  background:linear-gradient(90deg,#000080,#1084d0); color:#fff;
+  font-weight:bold; padding:3px 4px 3px 6px; font-size:11px;
+  display:flex; justify-content:space-between; align-items:center;
+}
+#y2k-dialog-x { width:16px; height:14px; background:#d4d0c8; border:1px outset #e0ddd8; font-size:9px; text-align:center; line-height:13px; cursor:default; color:#000; }
+#y2k-dialog-x:hover { background:#c8c4bc; }
+#y2k-dialog-body { padding:16px 16px 8px; line-height:1.7; color:#000; }
+#y2k-dialog-body .dlg-icon { font-size:32px; float:left; margin:0 12px 8px 0; }
+#y2k-dialog-footer { padding:8px 16px 12px; display:flex; justify-content:center; gap:8px; }
+.y2k-dlg-btn { font-family:'Tahoma',sans-serif; font-size:11px; padding:4px 20px; border:2px outset #e0ddd8; background:#d4d0c8; cursor:default; min-width:72px; }
+.y2k-dlg-btn:hover { background:#c8c4bc; }
+.y2k-dlg-btn:active { border-style:inset; }
 
-  #dropzone-label strong {
-    color: var(--accent);
-    font-weight: 500;
-  }
+/* ── Header ── */
+header { padding:22px 40px 18px; border-bottom:1px solid var(--border); display:flex; align-items:baseline; gap:16px; }
+header h1 { font-family:var(--mono); font-size:15px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent); }
+[data-theme="terminal"] header h1 { font-size:17px; text-shadow:0 0 10px var(--accent); }
+header span { font-size:11px; color:var(--muted); font-family:var(--mono); }
 
-  #dropzone-label .sub {
-    display: block;
-    margin-top: 8px;
-    font-size: 11px;
-    color: #444;
-  }
+/* ── Main ── */
+#main-normal { max-width:960px; margin:0 auto; padding:32px 40px; }
 
-  /* ── Progress ── */
-  #progress-wrap {
-    display: none;
-    margin-top: 24px;
-  }
+/* ── Dropzone ── */
+#dropzone {
+  border:1px dashed var(--border2); border-radius:var(--radius);
+  padding:48px 40px; text-align:center; cursor:pointer; position:relative;
+  background:var(--surface); transition:border-color 0.15s,background 0.15s;
+}
+#dropzone:hover,#dropzone.dragover { border-color:var(--accent); background:var(--dz-hover); }
+[data-theme="terminal"] #dropzone:hover,[data-theme="terminal"] #dropzone.dragover { box-shadow:0 0 16px rgba(0,255,65,0.15); }
+[data-theme="y2k"] #dropzone { border:2px inset #808080; background:#fff; }
+#dropzone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+#dropzone-label { font-family:var(--mono); font-size:13px; color:var(--muted); pointer-events:none; }
+[data-theme="y2k"] #dropzone-label { font-family:'Tahoma',sans-serif; color:#000; }
+#dropzone-label strong { color:var(--accent); font-weight:500; }
+[data-theme="y2k"] #dropzone-label strong { color:#000080; }
+[data-theme="terminal"] #dropzone-label::before { content:'$ '; color:var(--accent); }
+#dropzone-label .sub { display:block; margin-top:8px; font-size:11px; color:var(--muted); opacity:0.6; }
 
-  #progress-bar-track {
-    height: 2px;
-    background: var(--border);
-    border-radius: 1px;
-    overflow: hidden;
-  }
+/* ── Progress ── */
+#progress-wrap { display:none; margin-top:24px; }
+#progress-bar-track { height:var(--progress-h); background:var(--border); overflow:hidden; }
+[data-theme="y2k"] #progress-bar-track { border:1px inset #808080; background:#fff; }
+#progress-bar-fill { height:100%; background:var(--accent); width:0%; transition:width 0.1s linear; }
+[data-theme="terminal"] #progress-bar-fill { box-shadow:0 0 8px var(--accent); }
+[data-theme="y2k"] #progress-bar-fill { background:linear-gradient(90deg,#000080,#1084d0); }
+#progress-label { font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:8px; display:flex; justify-content:space-between; }
+[data-theme="terminal"] #progress-label { color:var(--accent); }
 
-  #progress-bar-fill {
-    height: 100%;
-    background: var(--accent);
-    width: 0%;
-    transition: width 0.1s linear;
-  }
+/* ── Stats ── */
+#stats {
+  display:none; margin-top:24px; padding:14px 20px;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  font-family:var(--mono); font-size:12px; gap:32px; flex-wrap:wrap;
+}
+[data-theme="y2k"] #stats { border:2px inset #808080; background:#fff; font-family:'Tahoma',sans-serif; }
+[data-theme="terminal"] #stats { box-shadow:0 0 8px rgba(0,255,65,0.05); }
+.stat-item { display:flex; flex-direction:column; gap:4px; }
+.stat-label { color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:0.1em; }
+[data-theme="y2k"] .stat-label { text-transform:none; letter-spacing:0; font-family:'Tahoma',sans-serif; }
+.stat-value { color:var(--text); font-size:15px; font-weight:600; }
+.stat-value.warn { color:var(--accent); }
+.stat-value.ok   { color:var(--ok); }
+[data-theme="terminal"] .stat-value.warn { text-shadow:0 0 6px var(--accent); }
 
-  #progress-label {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 8px;
-    display: flex;
-    justify-content: space-between;
-  }
+/* ── Controls ── */
+#controls { display:none; margin-top:16px; gap:10px; align-items:center; flex-wrap:wrap; }
+button {
+  font-family:var(--mono); font-size:11px; font-weight:500; letter-spacing:0.06em;
+  text-transform:uppercase; padding:8px 16px; border-radius:var(--btn-r);
+  cursor:pointer; border:1px solid; transition:background 0.12s,color 0.12s;
+}
+.btn-primary { background:var(--accent); border-color:var(--accent); color:var(--bg); }
+.btn-primary:hover { background:var(--accent2); border-color:var(--accent2); }
+.btn-ghost { background:transparent; border-color:var(--border2); color:var(--muted); }
+.btn-ghost:hover { border-color:var(--text); color:var(--text); }
+[data-theme="terminal"] .btn-primary { background:transparent; border-color:var(--accent); color:var(--accent); text-shadow:0 0 6px var(--accent); }
+[data-theme="terminal"] .btn-primary:hover { background:rgba(0,255,65,0.08); }
+[data-theme="y2k"] .btn-primary,[data-theme="y2k"] .btn-ghost {
+  font-family:'Tahoma',sans-serif; font-size:11px; text-transform:none; letter-spacing:0;
+  border:2px outset #e0ddd8; background:#d4d0c8; color:#000; padding:4px 14px;
+}
+[data-theme="y2k"] .btn-primary:hover,[data-theme="y2k"] .btn-ghost:hover { background:#c8c4bc; }
+[data-theme="y2k"] .btn-primary:active,[data-theme="y2k"] .btn-ghost:active { border-style:inset; }
+#search-wrap { margin-left:auto; display:flex; align-items:center; }
+#search {
+  font-family:var(--mono); font-size:12px; background:var(--surface);
+  border:1px solid var(--border2); border-radius:var(--radius);
+  color:var(--text); padding:7px 12px; width:220px; outline:none;
+}
+#search:focus { border-color:var(--accent); }
+#search::placeholder { color:var(--muted); opacity:0.5; }
+[data-theme="terminal"] #search { background:#010800; caret-color:var(--accent); }
+[data-theme="terminal"] #search:focus { box-shadow:0 0 6px rgba(0,255,65,0.15); }
+[data-theme="y2k"] #search { border:2px inset #808080; font-family:'Tahoma',sans-serif; background:#fff; }
 
-  /* ── Stats bar ── */
-  #stats {
-    display: none;
-    margin-top: 28px;
-    padding: 14px 20px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    font-family: var(--mono);
-    font-size: 12px;
-    display: none;
-    gap: 32px;
-    flex-wrap: wrap;
-  }
+/* ── Results ── */
+#results { margin-top:24px; }
+#no-dupes {
+  display:none; padding:32px; text-align:center;
+  font-family:var(--mono); font-size:13px; color:var(--ok);
+  border:1px solid var(--border); border-radius:var(--radius); background:var(--surface);
+}
+.group-block { margin-bottom:10px; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+[data-theme="y2k"] .group-block { border:2px outset #e0ddd8; }
+[data-theme="terminal"] .group-block { border-color:var(--border2); }
+.group-header {
+  display:grid; grid-template-columns:1fr auto auto auto auto; gap:16px;
+  align-items:center; padding:11px 16px; background:var(--surface2);
+  border-bottom:1px solid var(--border); cursor:pointer; user-select:none; transition:background 0.1s;
+}
+.group-header:hover { background:var(--gh-hover); }
+[data-theme="y2k"] .group-header { background:#000080; border-bottom:1px solid #000040; padding:4px 8px; }
+[data-theme="y2k"] .group-header:hover { background:#0000aa; }
+.group-name { font-family:var(--mono); font-size:13px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-theme="y2k"] .group-name { color:#fff; font-family:'Tahoma',sans-serif; font-size:11px; }
+.group-size { font-family:var(--mono); font-size:11px; color:var(--muted); white-space:nowrap; }
+[data-theme="y2k"] .group-size { color:#a0c8f0; font-family:'Tahoma',sans-serif; }
+.group-count { font-family:var(--mono); font-size:11px; padding:2px 8px; background:var(--accent-bg); color:var(--accent); border:1px solid var(--accent-bd); white-space:nowrap; }
+[data-theme="y2k"] .group-count { background:#ffff00; color:#000080; border-color:#808000; font-family:'Tahoma',sans-serif; }
+[data-theme="terminal"] .group-count { text-shadow:0 0 4px var(--accent); }
+.group-wasted { font-family:var(--mono); font-size:11px; color:var(--danger); white-space:nowrap; }
+[data-theme="y2k"] .group-wasted { color:#ffff00; font-family:'Tahoma',sans-serif; }
+.group-chevron { font-size:9px; color:var(--muted); transition:transform 0.15s; flex-shrink:0; }
+[data-theme="y2k"] .group-chevron { color:#fff; }
+.group-header.open .group-chevron { transform:rotate(90deg); }
+.group-body { display:none; }
+.group-body.open { display:block; }
+.file-row {
+  display:grid; grid-template-columns:1fr auto; gap:16px;
+  align-items:center; padding:9px 16px; border-bottom:1px solid var(--border); transition:background 0.1s;
+}
+.file-row:last-child { border-bottom:none; }
+.file-row:hover { background:var(--fr-hover); }
+[data-theme="y2k"] .file-row { background:#fff; border-bottom:1px solid #c0c0c0; padding:3px 8px; }
+[data-theme="y2k"] .file-row:hover { background:#000080; }
+[data-theme="y2k"] .file-row:hover .path-dir,
+[data-theme="y2k"] .file-row:hover .path-name,
+[data-theme="y2k"] .file-row:hover .hash-tag { color:#fff; }
+.file-path { font-family:var(--mono); font-size:11px; word-break:break-all; }
+[data-theme="y2k"] .file-path { font-family:'Courier New',monospace; }
+.path-dir  { color:var(--muted); }
+.path-name { color:var(--text); }
+[data-theme="terminal"] .path-dir  { color:#1a5200; }
+[data-theme="terminal"] .path-name { color:var(--accent); }
+.hash-tag { font-family:var(--mono); font-size:10px; color:var(--muted); opacity:0.5; white-space:nowrap; flex-shrink:0; }
 
-  .stat-item { display: flex; flex-direction: column; gap: 4px; }
-  .stat-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; }
-  .stat-value { color: var(--text); font-size: 15px; font-weight: 600; }
-  .stat-value.warn { color: var(--accent); }
-  .stat-value.ok   { color: var(--ok); }
+/* ── Footer ── */
+#footer-actions { display:none; margin-top:24px; padding-top:18px; border-top:1px solid var(--border); gap:10px; }
 
-  /* ── Controls ── */
-  #controls {
-    display: none;
-    margin-top: 20px;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-
-  button {
-    font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    padding: 8px 16px;
-    border-radius: 3px;
-    cursor: pointer;
-    border: 1px solid;
-    transition: background 0.12s, color 0.12s;
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #111;
-  }
-  .btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
-
-  .btn-ghost {
-    background: transparent;
-    border-color: var(--border2);
-    color: var(--muted);
-  }
-  .btn-ghost:hover { border-color: var(--text); color: var(--text); }
-
-  #search-wrap {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  #search {
-    font-family: var(--mono);
-    font-size: 12px;
-    background: var(--surface);
-    border: 1px solid var(--border2);
-    border-radius: 3px;
-    color: var(--text);
-    padding: 7px 12px;
-    width: 220px;
-    outline: none;
-  }
-  #search:focus { border-color: var(--accent); }
-  #search::placeholder { color: #444; }
-
-  /* ── Results ── */
-  #results {
-    margin-top: 28px;
-  }
-
-  #no-dupes {
-    display: none;
-    padding: 32px;
-    text-align: center;
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--ok);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: var(--surface);
-  }
-
-  .group-block {
-    margin-bottom: 16px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  .group-header {
-    display: grid;
-    grid-template-columns: 1fr auto auto auto;
-    gap: 16px;
-    align-items: center;
-    padding: 12px 16px;
-    background: #131313;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-    user-select: none;
-  }
-  .group-header:hover { background: #181818; }
-
-  .group-name {
-    font-family: var(--mono);
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .group-size {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
-    white-space: nowrap;
-  }
-
-  .group-count {
-    font-family: var(--mono);
-    font-size: 11px;
-    padding: 3px 10px;
-    border-radius: 2px;
-    background: #2a1f00;
-    color: var(--accent);
-    border: 1px solid #3d2e00;
-    white-space: nowrap;
-  }
-
-  .group-wasted {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--danger);
-    white-space: nowrap;
-  }
-
-  .group-chevron {
-    font-size: 10px;
-    color: var(--muted);
-    transition: transform 0.15s;
-    flex-shrink: 0;
-  }
-  .group-header.open .group-chevron { transform: rotate(90deg); }
-
-  .group-body {
-    display: none;
-  }
-  .group-body.open { display: block; }
-
-  .file-row {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 16px;
-    align-items: center;
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--border);
-    transition: background 0.1s;
-  }
-  .file-row:last-child { border-bottom: none; }
-  .file-row:hover { background: #1a1a1a; }
-
-  .file-path {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
-    word-break: break-all;
-  }
-
-  .file-path .path-dir  { color: #555; }
-  .file-path .path-name { color: var(--text); }
-
-  .hash-tag {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: #444;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  /* ── Footer ── */
-  #footer-actions {
-    display: none;
-    margin-top: 28px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border);
-    gap: 10px;
-  }
-
-  /* ── Utility ── */
-  .hidden { display: none !important; }
-  .flex   { display: flex; }
+.flex { display:flex; }
 </style>
 </head>
-<body>
+<body data-theme="y2k">
 
+<!-- theme bar -->
+<div id="theme-bar">
+  <span>THEME:</span>
+  <button class="theme-btn" data-t="dark">Dark</button>
+  <button class="theme-btn" data-t="terminal">Terminal</button>
+  <button class="theme-btn active" data-t="y2k">Y2K</button>
+  <button class="theme-btn" data-t="light">Light</button>
+</div>
+
+<!-- standard header/main (dark / terminal / light) -->
 <header>
   <h1>Dupe Finder</h1>
-  <span>SHA-256 content hash · local only · no uploads</span>
+  <span>SHA-256 content hash &middot; local only &middot; no uploads</span>
 </header>
 
-<main>
-
+<div id="main-normal">
   <div id="dropzone">
     <input type="file" id="folder-input" webkitdirectory multiple accept="*">
     <div id="dropzone-label">
@@ -362,80 +320,170 @@
       <span class="sub">Scans all files recursively. Nothing leaves your browser.</span>
     </div>
   </div>
-
   <div id="progress-wrap">
-    <div id="progress-bar-track">
-      <div id="progress-bar-fill"></div>
-    </div>
-    <div id="progress-label">
-      <span id="progress-text">Scanning...</span>
-      <span id="progress-count"></span>
-    </div>
+    <div id="progress-bar-track"><div id="progress-bar-fill"></div></div>
+    <div id="progress-label"><span id="progress-text">Scanning...</span><span id="progress-count"></span></div>
   </div>
-
   <div id="stats" class="flex">
-    <div class="stat-item">
-      <span class="stat-label">Files scanned</span>
-      <span class="stat-value" id="stat-total">—</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">Duplicate groups</span>
-      <span class="stat-value warn" id="stat-groups">—</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">Duplicate files</span>
-      <span class="stat-value warn" id="stat-dupes">—</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">Wasted space</span>
-      <span class="stat-value warn" id="stat-wasted">—</span>
-    </div>
+    <div class="stat-item"><span class="stat-label">Files scanned</span><span class="stat-value" id="stat-total">-</span></div>
+    <div class="stat-item"><span class="stat-label">Duplicate groups</span><span class="stat-value warn" id="stat-groups">-</span></div>
+    <div class="stat-item"><span class="stat-label">Duplicate files</span><span class="stat-value warn" id="stat-dupes">-</span></div>
+    <div class="stat-item"><span class="stat-label">Wasted space</span><span class="stat-value warn" id="stat-wasted">-</span></div>
   </div>
-
   <div id="controls" class="flex">
     <button class="btn-ghost" id="btn-reset">Reset</button>
-    <div id="search-wrap">
-      <input type="text" id="search" placeholder="Filter by filename or path...">
-    </div>
+    <div id="search-wrap"><input type="text" id="search" placeholder="Filter by filename or path..."></div>
   </div>
-
   <div id="results"></div>
   <div id="no-dupes">No duplicates found.</div>
-
   <div id="footer-actions" class="flex">
     <button class="btn-primary" id="btn-export">Export CSV</button>
   </div>
+</div>
 
-</main>
+<!-- y2k modal dialog -->
+<div id="y2k-overlay">
+  <div id="y2k-dialog">
+    <div id="y2k-dialog-titlebar">
+      <span id="y2k-dlg-title">Dialog</span>
+      <div id="y2k-dialog-x">&#215;</div>
+    </div>
+    <div id="y2k-dialog-body"></div>
+    <div id="y2k-dialog-footer"></div>
+  </div>
+</div>
+
+<!-- y2k window -->
+<div id="y2k-window">
+  <div id="y2k-titlebar">
+    <span>&#128190; Duplicate File Locator</span>
+    <div class="win-btns">
+      <div class="win-btn">_</div>
+      <div class="win-btn">&#9633;</div>
+      <div class="win-btn">&#215;</div>
+    </div>
+  </div>
+  <div id="y2k-menubar">
+    <div class="y2k-menu">
+      <span class="y2k-menu-label" data-menu="file">File</span>
+      <div class="y2k-dropdown" id="drop-file">
+        <div class="y2k-drop-item" data-action="open">Open Folder...</div>
+        <div class="y2k-drop-item" data-action="export">Export Results as CSV</div>
+        <div class="y2k-drop-sep"></div>
+        <div class="y2k-drop-item y2k-drop-dim">Print...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ctrl+P</div>
+        <div class="y2k-drop-sep"></div>
+        <div class="y2k-drop-item" data-action="close">Close</div>
+      </div>
+    </div>
+    <div class="y2k-menu">
+      <span class="y2k-menu-label" data-menu="edit">Edit</span>
+      <div class="y2k-dropdown" id="drop-edit">
+        <div class="y2k-drop-item y2k-drop-dim">Undo&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ctrl+Z</div>
+        <div class="y2k-drop-sep"></div>
+        <div class="y2k-drop-item y2k-drop-dim">Cut&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ctrl+X</div>
+        <div class="y2k-drop-item y2k-drop-dim">Copy&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ctrl+C</div>
+        <div class="y2k-drop-item y2k-drop-dim">Paste&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ctrl+V</div>
+        <div class="y2k-drop-sep"></div>
+        <div class="y2k-drop-item" data-action="select-all">Select All&nbsp;&nbsp;&nbsp;&nbsp;Ctrl+A</div>
+        <div class="y2k-drop-sep"></div>
+        <div class="y2k-drop-item" data-action="find-dupes-of-dupes">Find Dupes of Dupes...</div>
+      </div>
+    </div>
+    <div class="y2k-menu">
+      <span class="y2k-menu-label" data-menu="view">View</span>
+      <div class="y2k-dropdown" id="drop-view">
+        <div class="y2k-drop-item y2k-drop-dim">&#9633; Large Icons</div>
+        <div class="y2k-drop-item y2k-drop-dim">&#9776; List</div>
+        <div class="y2k-drop-item y2k-drop-check">&#10003; Details</div>
+        <div class="y2k-drop-sep"></div>
+        <div class="y2k-drop-item" data-action="refresh">Refresh&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;F5</div>
+        <div class="y2k-drop-sep"></div>
+        <div class="y2k-drop-item" data-action="theme-dark">Switch to Dark Mode</div>
+        <div class="y2k-drop-item" data-action="theme-terminal">Switch to Terminal Mode</div>
+        <div class="y2k-drop-sep"></div>
+        <div class="y2k-drop-item" data-action="bonk">&#127760; Set as Homepage...</div>
+      </div>
+    </div>
+    <div class="y2k-menu">
+      <span class="y2k-menu-label" data-menu="help">Help</span>
+      <div class="y2k-dropdown" id="drop-help">
+        <div class="y2k-drop-item" data-action="help-topics">Help Topics</div>
+        <div class="y2k-drop-item" data-action="tip">Tip of the Day</div>
+        <div class="y2k-drop-sep"></div>
+        <div class="y2k-drop-item" data-action="update">Check for Updates</div>
+        <div class="y2k-drop-item y2k-drop-dim">Send Feedback (MSN Messenger)</div>
+        <div class="y2k-drop-sep"></div>
+        <div class="y2k-drop-item" data-action="about">About Duplicate File Locator</div>
+      </div>
+    </div>
+  </div>
+  <div id="y2k-inner"><!-- content moved here by JS --></div>
+  <div id="y2k-statusbar">
+    <span class="y2k-status-pane" id="y2k-status-left">Ready</span>
+    <span class="y2k-status-pane" id="y2k-status-right">0 objects</span>
+  </div>
+</div>
 
 <script>
 "use strict";
-
 const $ = id => document.getElementById(id);
 
+// ── Theme ──────────────────────────────────────────────────────────────────
+let currentTheme = localStorage.getItem('df-theme') || 'y2k';
+
+function applyTheme(t) {
+  currentTheme = t;
+  document.body.setAttribute('data-theme', t);
+  localStorage.setItem('df-theme', t);
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.t === t));
+  const isY2K = t === 'y2k';
+  $('main-normal').style.display = isY2K ? 'none' : '';
+  $('y2k-window').style.display  = isY2K ? 'block' : 'none';
+  if (isY2K) syncY2K();
+}
+
+function syncY2K() {
+  const inner = $('y2k-inner');
+  inner.innerHTML = '';
+  ['dropzone','progress-wrap','stats','controls','results','no-dupes','footer-actions']
+    .forEach(id => { const el=$(id); if(el) inner.appendChild(el); });
+}
+
+function unsyncY2K() {
+  const normal = $('main-normal');
+  ['dropzone','progress-wrap','stats','controls','results','no-dupes','footer-actions']
+    .forEach(id => { const el=$(id); if(el && el.parentNode !== normal) normal.appendChild(el); });
+}
+
+document.querySelectorAll('.theme-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (currentTheme === 'y2k') unsyncY2K();
+    applyTheme(btn.dataset.t);
+  });
+});
+
+// ── UI refs ────────────────────────────────────────────────────────────────
 const ui = {
-  dropzone:      $('dropzone'),
-  folderInput:   $('folder-input'),
-  progressWrap:  $('progress-wrap'),
-  progressFill:  $('progress-bar-fill'),
-  progressText:  $('progress-text'),
-  progressCount: $('progress-count'),
-  stats:         $('stats'),
-  statTotal:     $('stat-total'),
-  statGroups:    $('stat-groups'),
-  statDupes:     $('stat-dupes'),
-  statWasted:    $('stat-wasted'),
-  controls:      $('controls'),
-  search:        $('search'),
-  results:       $('results'),
-  noDupes:       $('no-dupes'),
-  footerActions: $('footer-actions'),
-  btnReset:      $('btn-reset'),
-  btnExport:     $('btn-export'),
+  get dropzone()      { return $('dropzone'); },
+  get folderInput()   { return $('folder-input'); },
+  get progressWrap()  { return $('progress-wrap'); },
+  get progressFill()  { return $('progress-bar-fill'); },
+  get progressText()  { return $('progress-text'); },
+  get progressCount() { return $('progress-count'); },
+  get stats()         { return $('stats'); },
+  get statTotal()     { return $('stat-total'); },
+  get statGroups()    { return $('stat-groups'); },
+  get statDupes()     { return $('stat-dupes'); },
+  get statWasted()    { return $('stat-wasted'); },
+  get controls()      { return $('controls'); },
+  get search()        { return $('search'); },
+  get results()       { return $('results'); },
+  get noDupes()       { return $('no-dupes'); },
+  get footerActions() { return $('footer-actions'); },
 };
 
 // ── State ──────────────────────────────────────────────────────────────────
-let allGroups = [];   // [{hash, size, files:[{name,path}]}]
+let allGroups = [];
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function fmtSize(bytes) {
@@ -444,285 +492,388 @@ function fmtSize(bytes) {
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
   return (bytes / Math.pow(1024, i)).toFixed(i ? 1 : 0) + ' ' + u[i];
 }
-
-function fmtHash(hex) {
-  return hex.slice(0, 8) + '…';
-}
-
+function fmtHash(hex)  { return hex.slice(0,8) + '\u2026'; }
 async function sha256(file) {
-  const buf = await file.arrayBuffer();
+  const buf    = await file.arrayBuffer();
   const digest = await crypto.subtle.digest('SHA-256', buf);
-  return Array.from(new Uint8Array(digest))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
+const getPath  = f => f.webkitRelativePath || f.name;
+const dirPart  = p => { const i=p.lastIndexOf('/'); return i>=0?p.slice(0,i+1):''; };
+const namePart = p => { const i=p.lastIndexOf('/'); return i>=0?p.slice(i+1):p; };
+const esc      = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-function getPath(file) {
-  // webkitRelativePath = "folderName/sub/file.txt"
-  return file.webkitRelativePath || file.name;
-}
-
-function dirPart(path) {
-  const i = path.lastIndexOf('/');
-  return i >= 0 ? path.slice(0, i + 1) : '';
-}
-
-function namePart(path) {
-  const i = path.lastIndexOf('/');
-  return i >= 0 ? path.slice(i + 1) : path;
-}
-
-// ── Core scan ─────────────────────────────────────────────────────────────
+// ── Scan ───────────────────────────────────────────────────────────────────
 async function scan(files) {
-  const total = files.length;
-  const hashMap = new Map();   // hash -> [{name, path, size}]
-  const sizeMap = new Map();   // size -> [file] (pre-filter)
-
-  // Group by size first — no point hashing unique sizes
-  for (const f of files) {
-    const bucket = sizeMap.get(f.size) ?? [];
-    bucket.push(f);
-    sizeMap.set(f.size, bucket);
-  }
-
+  const total   = files.length;
+  const sizeMap = new Map();
+  for (const f of files) { const b=sizeMap.get(f.size)??[]; b.push(f); sizeMap.set(f.size,b); }
   const candidates = [];
-  for (const bucket of sizeMap.values()) {
-    if (bucket.length > 1) candidates.push(...bucket);
-  }
-
-  // Files that share no size with anything else are unique by definition
+  for (const b of sizeMap.values()) if (b.length > 1) candidates.push(...b);
   const skipped = total - candidates.length;
-
+  const hashMap = new Map();
   let done = 0;
   for (const f of candidates) {
-    const hash = await sha256(f);
-    const path = getPath(f);
-    const entry = { name: f.name, path, size: f.size };
-    const bucket = hashMap.get(hash) ?? [];
-    bucket.push(entry);
-    hashMap.set(hash, bucket);
-
+    const hash  = await sha256(f);
+    const entry = { name:f.name, path:getPath(f), size:f.size };
+    const b     = hashMap.get(hash)??[];
+    b.push(entry); hashMap.set(hash,b);
     done++;
-    const pct = Math.round(((done + skipped) / total) * 100);
-    ui.progressFill.style.width = pct + '%';
-    ui.progressText.textContent = `Hashing ${f.name}`;
-    ui.progressCount.textContent = `${done + skipped} / ${total}`;
-
-    // yield to browser so UI updates
-    if (done % 20 === 0) await new Promise(r => setTimeout(r, 0));
+    const pct = Math.round(((done+skipped)/total)*100);
+    ui.progressFill.style.width  = pct + '%';
+    ui.progressText.textContent  = currentTheme==='terminal' ? '$ sha256sum '+f.name : 'Hashing '+f.name;
+    ui.progressCount.textContent = (done+skipped)+' / '+total;
+    if (done % 20 === 0) await new Promise(r => setTimeout(r,0));
   }
-
-  // Build groups
   const groups = [];
-  for (const [hash, entries] of hashMap.entries()) {
-    if (entries.length > 1) {
-      groups.push({ hash, size: entries[0].size, files: entries });
-    }
-  }
-
-  // Sort: most wasted space first
-  groups.sort((a, b) =>
-    (b.size * (b.files.length - 1)) - (a.size * (a.files.length - 1))
-  );
-
+  for (const [hash,entries] of hashMap.entries())
+    if (entries.length > 1) groups.push({hash, size:entries[0].size, files:entries});
+  groups.sort((a,b) => (b.size*(b.files.length-1))-(a.size*(a.files.length-1)));
   return groups;
 }
 
 // ── Render ─────────────────────────────────────────────────────────────────
 function renderGroups(groups) {
   ui.results.innerHTML = '';
-
-  if (groups.length === 0) {
-    ui.noDupes.style.display = 'block';
+  if (!groups.length) {
+    ui.noDupes.style.display       = 'block';
     ui.footerActions.style.display = 'none';
     return;
   }
-
-  ui.noDupes.style.display = 'none';
+  ui.noDupes.style.display       = 'none';
   ui.footerActions.style.display = 'flex';
-
   for (const g of groups) {
-    const wasted = g.size * (g.files.length - 1);
-    const block = document.createElement('div');
+    const wasted = g.size*(g.files.length-1);
+    const block  = document.createElement('div');
     block.className = 'group-block';
-
     const header = document.createElement('div');
     header.className = 'group-header';
-    header.innerHTML = `
-      <span class="group-name">${escHtml(g.files[0].name)}</span>
-      <span class="group-size">${fmtSize(g.size)}</span>
-      <span class="group-count">${g.files.length} copies</span>
-      <span class="group-wasted">+${fmtSize(wasted)}</span>
-      <span class="group-chevron">▶</span>
-    `;
-
+    header.innerHTML =
+      '<span class="group-name">'+esc(g.files[0].name)+'</span>'+
+      '<span class="group-size">'+fmtSize(g.size)+'</span>'+
+      '<span class="group-count">'+g.files.length+' copies</span>'+
+      '<span class="group-wasted">+'+fmtSize(wasted)+'</span>'+
+      '<span class="group-chevron">&#9654;</span>';
     const body = document.createElement('div');
     body.className = 'group-body';
-
     for (const f of g.files) {
-      const dir  = dirPart(f.path);
-      const name = namePart(f.path);
-      const row  = document.createElement('div');
+      const row = document.createElement('div');
       row.className = 'file-row';
-      row.innerHTML = `
-        <span class="file-path">
-          <span class="path-dir">${escHtml(dir)}</span><span class="path-name">${escHtml(name)}</span>
-        </span>
-        <span class="hash-tag">${fmtHash(g.hash)}</span>
-      `;
+      row.innerHTML =
+        '<span class="file-path">'+
+          '<span class="path-dir">'+esc(dirPart(f.path))+'</span>'+
+          '<span class="path-name">'+esc(namePart(f.path))+'</span>'+
+        '</span>'+
+        '<span class="hash-tag">'+fmtHash(g.hash)+'</span>';
       body.appendChild(row);
     }
-
     header.addEventListener('click', () => {
       header.classList.toggle('open');
       body.classList.toggle('open');
     });
-
-    // default open for small result sets
-    if (groups.length <= 10) {
-      header.classList.add('open');
-      body.classList.add('open');
-    }
-
+    if (groups.length <= 10) { header.classList.add('open'); body.classList.add('open'); }
     block.appendChild(header);
     block.appendChild(body);
     ui.results.appendChild(block);
   }
-}
-
-function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// ── Filter ─────────────────────────────────────────────────────────────────
-function applyFilter(query) {
-  const q = query.trim().toLowerCase();
-  if (!q) { renderGroups(allGroups); return; }
-  const filtered = allGroups.filter(g =>
-    g.files.some(f =>
-      f.name.toLowerCase().includes(q) ||
-      f.path.toLowerCase().includes(q)
-    )
-  );
-  renderGroups(filtered);
-}
-
-// ── Export ─────────────────────────────────────────────────────────────────
-function exportCSV() {
-  const rows = [['hash', 'filename', 'path', 'size_bytes', 'copies']];
-  for (const g of allGroups) {
-    for (const f of g.files) {
-      rows.push([g.hash, f.name, f.path, g.size, g.files.length]);
-    }
+  if (currentTheme === 'y2k') {
+    $('y2k-status-left').textContent  = groups.length+' duplicate group(s) found';
+    $('y2k-status-right').textContent = allGroups.reduce((n,g)=>n+g.files.length,0)+' objects';
   }
-  const csv = rows.map(r =>
-    r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')
-  ).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
+}
+
+// ── Filter / export ────────────────────────────────────────────────────────
+function applyFilter(q) {
+  q = q.trim().toLowerCase();
+  if (!q) { renderGroups(allGroups); return; }
+  renderGroups(allGroups.filter(g => g.files.some(f =>
+    f.name.toLowerCase().includes(q) || f.path.toLowerCase().includes(q)
+  )));
+}
+
+function exportCSV() {
+  const rows = [['hash','filename','path','size_bytes','copies']];
+  for (const g of allGroups)
+    for (const f of g.files)
+      rows.push([g.hash, f.name, f.path, g.size, g.files.length]);
+  const csv = rows.map(r => r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
   a.download = 'duplicates.csv';
   a.click();
 }
 
-// ── Entry ──────────────────────────────────────────────────────────────────
+// ── Run ────────────────────────────────────────────────────────────────────
 async function run(fileList) {
   const files = Array.from(fileList).filter(f => f.size > 0);
   if (!files.length) return;
-
-  // show progress, hide drop zone
-  ui.dropzone.style.display = 'none';
-  ui.progressWrap.style.display = 'block';
-  ui.stats.style.display = 'none';
-  ui.controls.style.display = 'none';
-  ui.results.innerHTML = '';
-  ui.noDupes.style.display = 'none';
-
-  const groups = await scan(files);
-  allGroups = groups;
-
-  // stats
-  const dupeCount = groups.reduce((n, g) => n + g.files.length, 0);
-  const wasted    = groups.reduce((n, g) => n + g.size * (g.files.length - 1), 0);
-
+  ui.dropzone.style.display      = 'none';
+  ui.progressWrap.style.display  = 'block';
+  ui.stats.style.display         = 'none';
+  ui.controls.style.display      = 'none';
+  ui.results.innerHTML           = '';
+  ui.noDupes.style.display       = 'none';
+  if (currentTheme==='y2k') $('y2k-status-left').textContent = 'Scanning...';
+  const groups    = await scan(files);
+  allGroups       = groups;
+  const dupeCount = groups.reduce((n,g)=>n+g.files.length,0);
+  const wasted    = groups.reduce((n,g)=>n+g.size*(g.files.length-1),0);
   ui.statTotal.textContent  = files.length.toLocaleString();
   ui.statGroups.textContent = groups.length.toLocaleString();
   ui.statDupes.textContent  = dupeCount.toLocaleString();
   ui.statWasted.textContent = fmtSize(wasted);
-
   ui.progressWrap.style.display = 'none';
-  ui.stats.style.display = 'flex';
-  ui.controls.style.display = 'flex';
-
+  ui.stats.style.display        = 'flex';
+  ui.controls.style.display     = 'flex';
   renderGroups(groups);
 }
 
-// ── Events ─────────────────────────────────────────────────────────────────
-ui.folderInput.addEventListener('change', e => {
-  run(e.target.files);
+// ── File input / drag-drop ─────────────────────────────────────────────────
+document.addEventListener('change', e => {
+  if (e.target.id === 'folder-input') run(e.target.files);
 });
-
-ui.dropzone.addEventListener('dragover', e => {
-  e.preventDefault();
-  ui.dropzone.classList.add('dragover');
-});
-
-ui.dropzone.addEventListener('dragleave', () => {
-  ui.dropzone.classList.remove('dragover');
-});
-
-ui.dropzone.addEventListener('drop', e => {
-  e.preventDefault();
-  ui.dropzone.classList.remove('dragover');
-  if (e.dataTransfer.items) {
-    // Drag-drop folder: collect all file entries recursively
-    const entries = Array.from(e.dataTransfer.items)
-      .map(i => i.webkitGetAsEntry())
-      .filter(Boolean);
-    collectEntries(entries).then(files => {
-      if (files.length) run(files);
-    });
+document.addEventListener('dragover', e => {
+  if ($('dropzone') && ($('dropzone').contains(e.target) || e.target===$('dropzone'))) {
+    e.preventDefault(); $('dropzone').classList.add('dragover');
   }
 });
-
+document.addEventListener('dragleave', e => {
+  if ($('dropzone') && !$('dropzone').contains(e.relatedTarget))
+    $('dropzone').classList.remove('dragover');
+});
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  if ($('dropzone')) $('dropzone').classList.remove('dragover');
+  if (e.dataTransfer.items) {
+    const entries = Array.from(e.dataTransfer.items).map(i=>i.webkitGetAsEntry()).filter(Boolean);
+    collectEntries(entries).then(files => { if (files.length) run(files); });
+  }
+});
 async function collectEntries(entries) {
   const files = [];
   async function walk(entry, path) {
     if (entry.isFile) {
       const file = await new Promise(r => entry.file(r));
-      // Attach a fake webkitRelativePath for drag-drop
-      Object.defineProperty(file, 'webkitRelativePath', {
-        value: path + file.name, writable: false
-      });
+      Object.defineProperty(file, 'webkitRelativePath', { value:path+file.name, writable:false });
       files.push(file);
     } else if (entry.isDirectory) {
       const reader = entry.createReader();
       let batch;
       do {
         batch = await new Promise(r => reader.readEntries(r));
-        for (const e of batch) await walk(e, path + entry.name + '/');
+        for (const e of batch) await walk(e, path+entry.name+'/');
       } while (batch.length > 0);
     }
   }
-  for (const e of entries) await walk(e, '');
+  for (const e of entries) await walk(e,'');
   return files;
 }
 
-ui.search.addEventListener('input', e => applyFilter(e.target.value));
-
-ui.btnReset.addEventListener('click', () => {
-  allGroups = [];
-  ui.dropzone.style.display = '';
-  ui.stats.style.display = 'none';
-  ui.controls.style.display = 'none';
-  ui.results.innerHTML = '';
-  ui.noDupes.style.display = 'none';
-  ui.footerActions.style.display = 'none';
-  ui.progressFill.style.width = '0%';
-  ui.folderInput.value = '';
+// ── Search / reset / export buttons ───────────────────────────────────────
+document.addEventListener('input', e => { if (e.target.id==='search') applyFilter(e.target.value); });
+document.addEventListener('click', e => {
+  if (e.target.id === 'btn-reset') {
+    allGroups = [];
+    ui.dropzone.style.display      = '';
+    ui.stats.style.display         = 'none';
+    ui.controls.style.display      = 'none';
+    ui.results.innerHTML           = '';
+    ui.noDupes.style.display       = 'none';
+    ui.footerActions.style.display = 'none';
+    ui.progressFill.style.width    = '0%';
+    $('folder-input').value        = '';
+    if (currentTheme==='y2k') {
+      $('y2k-status-left').textContent  = 'Ready';
+      $('y2k-status-right').textContent = '0 objects';
+    }
+  }
+  if (e.target.id === 'btn-export') exportCSV();
 });
 
-ui.btnExport.addEventListener('click', exportCSV);
+// ── Y2K dropdown menu ──────────────────────────────────────────────────────
+let openMenuId = null;
+
+function closeAllMenus() {
+  document.querySelectorAll('.y2k-menu-label').forEach(m => m.classList.remove('open'));
+  document.querySelectorAll('.y2k-dropdown').forEach(d => d.classList.remove('open'));
+  openMenuId = null;
+}
+
+document.querySelectorAll('.y2k-menu-label[data-menu]').forEach(label => {
+  label.addEventListener('click', e => {
+    e.stopPropagation();
+    const id   = label.dataset.menu;
+    const drop = $('drop-'+id);
+    if (openMenuId === id) { closeAllMenus(); return; }
+    closeAllMenus();
+    label.classList.add('open');
+    drop.classList.add('open');
+    openMenuId = id;
+  });
+  label.addEventListener('mouseenter', () => {
+    if (openMenuId && openMenuId !== label.dataset.menu) {
+      closeAllMenus();
+      const drop = $('drop-'+label.dataset.menu);
+      label.classList.add('open');
+      drop.classList.add('open');
+      openMenuId = label.dataset.menu;
+    }
+  });
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.y2k-menu')) closeAllMenus();
+});
+
+// ── Y2K modal ─────────────────────────────────────────────────────────────
+function openDialog(title, bodyHtml, buttons) {
+  $('y2k-dlg-title').textContent = title;
+  $('y2k-dialog-body').innerHTML = bodyHtml;
+  const footer = $('y2k-dialog-footer');
+  footer.innerHTML = '';
+  (buttons || [{label:'OK', fn:closeDialog}]).forEach(b => {
+    const btn = document.createElement('button');
+    btn.className   = 'y2k-dlg-btn';
+    btn.textContent = b.label;
+    btn.onclick     = b.fn || closeDialog;
+    footer.appendChild(btn);
+  });
+  $('y2k-overlay').classList.add('open');
+}
+function closeDialog() { $('y2k-overlay').classList.remove('open'); }
+$('y2k-dialog-x').addEventListener('click', closeDialog);
+$('y2k-overlay').addEventListener('click', e => { if (e.target===$('y2k-overlay')) closeDialog(); });
+
+// ── Easter egg content ─────────────────────────────────────────────────────
+const TIPS = [
+  "SHA-256 has never been broken. Neither has your habit of saving the same file in 12 places.",
+  "Files of different sizes cannot be duplicates. Size matters. In this context.",
+  "The average hard drive in 2001 was 20-40 GB. You probably have that much in duplicate vacation photos.",
+  "Tip: Renaming a file does not make it less of a duplicate.",
+  "Did you know? This program uses 0 cookies, 0 trackers, and 0 servers. It is just math.",
+  "If you find a file copied 47 times, that is not a bug. That is a you problem.",
+  "Defragmenting your hard drive after removing duplicates may improve performance. Probably.",
+  "This program was not made in 2000. It just looks like it was.",
+];
+let tipIdx = 0;
+
+const HELP_HTML =
+  '<div class="dlg-icon">&#10067;</div>'+
+  '<b>Duplicate File Locator Help</b><br><br>'+
+  '<b>Q: How do I use this?</b><br>Click the box. Select a folder. Look at results.<br><br>'+
+  '<b>Q: Is my data safe?</b><br>Yes. Nothing leaves your browser. This is HTML.<br><br>'+
+  '<b>Q: Why is it slow?</b><br>SHA-256 hashing takes time. Large folders take more time.<br><br>'+
+  '<b>Q: Can I delete files from here?</b><br>No. Delete them yourself.';
+
+const ABOUT_HTML =
+  '<div class="dlg-icon">&#128190;</div>'+
+  '<b>Duplicate File Locator</b><br>Version 1.0.0 (Build 2000.01.01)<br><br>'+
+  '&copy; 1994 no_doctrine. No rights reserved.<br><br>'+
+  'This product is licensed to:v the people<br><br>'+
+  '<small>This program is not protected by law. None of us are. Laws are threats made by the dominant socioeconomic-ethnic group in a given nation. It’s just the promise of violence that’s enacted and the police are basically an occupying army. You know what I mean?.</small>';
+
+// ── Menu action dispatch ───────────────────────────────────────────────────
+document.querySelectorAll('[data-action]').forEach(el => {
+  el.addEventListener('click', e => {
+    e.stopPropagation();
+    closeAllMenus();
+    switch (el.dataset.action) {
+
+      case 'open':
+        $('folder-input').click();
+        break;
+
+      case 'export':
+        if (!allGroups.length)
+          openDialog('Export', '<div class="dlg-icon">&#9888;</div>No results to export. Scan a folder first.');
+        else exportCSV();
+        break;
+
+      case 'close':
+        openDialog('Confirm Close',
+          '<div class="dlg-icon">&#10067;</div>Are you sure you want to close?<br><br>Unsaved results will be lost.',
+          [
+            { label:'Yes', fn:() => { closeDialog(); window.close(); } },
+            { label:'No',  fn:closeDialog },
+          ]);
+        break;
+
+      case 'select-all':
+        openDialog('Select All',
+          '<div class="dlg-icon">&#9745;</div>All 0 items selected.<br><br>'+
+          'There is nothing to select. This is a viewer, not a file manager.');
+        break;
+
+      case 'find-dupes-of-dupes':
+        openDialog('Find Dupes of Dupes',
+          '<div class="dlg-icon">&#128000;</div>'+
+          'Searching for duplicates of your duplicates...<br><br>'+
+          '<b>Result:</b> They are the same duplicates. That is how duplicates work.',
+          [{ label:'Mind Blown', fn:closeDialog }]);
+        break;
+
+      case 'refresh':
+        openDialog('Refresh',
+          '<div class="dlg-icon">&#128260;</div>'+
+          'Refreshing...<br><br>Results unchanged. Your files have not moved in the last 0.3 seconds.');
+        break;
+
+      case 'bonk':
+        openDialog('Set as Homepage',
+          '<div class="dlg-icon">&#127760;</div>'+
+          'Internet Explorer cannot set this as your homepage because:<br><br>'+
+          '1. This is not a webpage.<br>2. Internet Explorer is not installed.<br>3. Internet Explorer should not be installed.',
+          [
+            { label:'OK', fn:closeDialog },
+            { label:'Try Anyway', fn:() => {
+                closeDialog();
+                setTimeout(() => openDialog('Internet Explorer',
+                  '<div class="dlg-icon">&#128165;</div>'+
+                  '<b>IEXPLORE.EXE has encountered a problem and needs to close.</b><br><br>'+
+                  'We are sorry for the inconvenience.',
+                  [{ label:'Close', fn:closeDialog }]
+                ), 500);
+              }
+            },
+          ]);
+        break;
+
+      case 'theme-dark':
+        if (currentTheme==='y2k') unsyncY2K();
+        applyTheme('dark');
+        break;
+
+      case 'theme-terminal':
+        if (currentTheme==='y2k') unsyncY2K();
+        applyTheme('terminal');
+        break;
+
+      case 'help-topics':
+        openDialog('Help Topics', HELP_HTML);
+        break;
+
+      case 'tip':
+        openDialog('Tip of the Day',
+          '<div class="dlg-icon">&#128161;</div>'+TIPS[tipIdx++ % TIPS.length]);
+        break;
+
+      case 'update':
+        openDialog('Check for Updates',
+          '<div class="dlg-icon">&#128336;</div>'+
+          'Contacting update server...<br><br>'+
+          '<b>Result:</b> Server not found.<br><br>'+
+          'You are either up to date or the server no longer exists. Both are plausible.');
+        break;
+
+      case 'about':
+        openDialog('About Duplicate File Locator', ABOUT_HTML);
+        break;
+    }
+  });
+});
+
+// ── Init ───────────────────────────────────────────────────────────────────
+applyTheme(currentTheme);
 </script>
 </body>
 </html>
