@@ -33,14 +33,14 @@
   --progress-h:4px; --btn-r:0px;
 }
 [data-theme="y2k"] {
-  --bg:#008080; --surface:#d4d0c8; --surface2:#c8c4bc;
+  --bg:#d4d0c8; --surface:#ffffff; --surface2:#ece9d8;
   --border:#808080; --border2:#404040;
   --text:#000000; --muted:#444444;
   --accent:#000080; --accent2:#0000aa;
   --accent-bg:#000080; --accent-bd:#000040;
   --danger:#cc0000; --ok:#006600;
   --mono:'Courier New',monospace; --sans:'Tahoma','MS Sans Serif','Arial',sans-serif;
-  --radius:0px; --dz-hover:#bdb9b0; --gh-hover:#0000aa; --fr-hover:#eeecea;
+  --radius:0px; --dz-hover:#ece9d8; --gh-hover:#0000aa; --fr-hover:#f0eeea;
   --progress-h:16px; --btn-r:2px;
 }
 [data-theme="light"] {
@@ -61,7 +61,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); font-si
   content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
   background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);
 }
-[data-theme="y2k"] body { padding:16px; }
+[data-theme="y2k"] body { background:#d4d0c8; padding:16px; }
 
 /* ── Theme bar ── */
 #theme-bar {
@@ -292,6 +292,34 @@ button {
 /* ── Footer ── */
 #footer-actions { display:none; margin-top:24px; padding-top:18px; border-top:1px solid var(--border); gap:10px; }
 
+/* ── Directory analysis ── */
+#dir-analysis { margin-top:24px; }
+#dir-analysis:empty { display:none; }
+.da-header {
+  font-family:var(--mono); font-size:11px; font-weight:600;
+  text-transform:uppercase; letter-spacing:0.1em; color:var(--muted);
+  margin-bottom:10px;
+}
+[data-theme="y2k"] .da-header { font-family:'Tahoma',sans-serif; text-transform:none; letter-spacing:0; font-weight:bold; }
+.da-row {
+  padding:10px 14px; margin-bottom:6px;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  font-family:var(--mono); font-size:12px; line-height:1.6;
+}
+[data-theme="y2k"] .da-row { border:2px inset #808080; background:#fff; font-family:'Tahoma',sans-serif; font-size:11px; }
+[data-theme="terminal"] .da-row { border-color:var(--border2); }
+.da-row.da-all { border-color:var(--danger); }
+[data-theme="y2k"] .da-row.da-all { border-color:var(--danger); background:#fff8f8; }
+.da-count { color:var(--accent); font-weight:600; }
+[data-theme="y2k"] .da-count { color:#000080; }
+.da-dirs { color:var(--muted); font-size:11px; margin-top:2px; word-break:break-all; }
+[data-theme="y2k"] .da-dirs { font-family:'Courier New',monospace; }
+.da-all-badge {
+  display:inline-block; font-size:10px; padding:1px 6px; margin-left:8px;
+  background:var(--danger); color:#fff; border-radius:2px; vertical-align:middle;
+}
+[data-theme="y2k"] .da-all-badge { border-radius:0; }
+
 .flex { display:flex; }
 </style>
 </head>
@@ -339,6 +367,7 @@ button {
   <div id="footer-actions" class="flex">
     <button class="btn-primary" id="btn-export">Export CSV</button>
   </div>
+  <div id="dir-analysis"></div>
 </div>
 
 <!-- y2k modal dialog -->
@@ -445,13 +474,13 @@ function applyTheme(t) {
 function syncY2K() {
   const inner = $('y2k-inner');
   inner.innerHTML = '';
-  ['dropzone','progress-wrap','stats','controls','results','no-dupes','footer-actions']
+  ['dropzone','progress-wrap','stats','controls','results','no-dupes','footer-actions','dir-analysis']
     .forEach(id => { const el=$(id); if(el) inner.appendChild(el); });
 }
 
 function unsyncY2K() {
   const normal = $('main-normal');
-  ['dropzone','progress-wrap','stats','controls','results','no-dupes','footer-actions']
+  ['dropzone','progress-wrap','stats','controls','results','no-dupes','footer-actions','dir-analysis']
     .forEach(id => { const el=$(id); if(el && el.parentNode !== normal) normal.appendChild(el); });
 }
 
@@ -582,6 +611,72 @@ function renderGroups(groups) {
   }
 }
 
+// ── Directory pair analysis ────────────────────────────────────────────────
+function renderDirAnalysis(groups, allScannedFiles) {
+  const el = $('dir-analysis');
+  el.innerHTML = '';
+  if (!groups.length) return;
+
+  // Count total files per directory across the full scan
+  const dirTotals = new Map();
+  for (const f of allScannedFiles) {
+    const d = dirPart(getPath(f));
+    dirTotals.set(d, (dirTotals.get(d) ?? 0) + 1);
+  }
+
+  // For each duplicate group, generate all unordered dir pairs
+  // pairMap: "dirA|||dirB" -> count of shared duplicate files
+  const pairMap = new Map();
+  for (const g of groups) {
+    const dirs = [...new Set(g.files.map(f => dirPart(f.path)))];
+    for (let i = 0; i < dirs.length; i++) {
+      for (let j = i + 1; j < dirs.length; j++) {
+        const key = [dirs[i], dirs[j]].sort().join('|||');
+        pairMap.set(key, (pairMap.get(key) ?? 0) + 1);
+      }
+    }
+  }
+
+  if (!pairMap.size) return;
+
+  // Sort pairs by duplicate count descending
+  const pairs = [...pairMap.entries()]
+    .map(([key, count]) => {
+      const [d1, d2] = key.split('|||');
+      // "nearly all" threshold: dupes >= 80% of the smaller dir's file count
+      const smaller  = Math.min(dirTotals.get(d1) ?? 0, dirTotals.get(d2) ?? 0);
+      const nearlyAll = smaller > 0 && (count / smaller) >= 0.8;
+      return { d1, d2, count, nearlyAll };
+    })
+    .sort((a, b) => b.count - a.count);
+
+  const header = document.createElement('div');
+  header.className = 'da-header';
+  header.textContent = 'Directory Analysis';
+  el.appendChild(header);
+
+  for (const p of pairs) {
+    const row = document.createElement('div');
+    row.className = 'da-row' + (p.nearlyAll ? ' da-all' : '');
+
+    const badge = p.nearlyAll
+      ? '<span class="da-all-badge">nearly all</span>'
+      : '';
+
+    const msg = p.nearlyAll
+      ? 'All or nearly all files are duplicated between these two directories.' + badge
+      : 'There are <span class="da-count">' + p.count + '</span> file'
+        + (p.count !== 1 ? 's' : '')
+        + ' duplicated between these two directories.';
+
+    row.innerHTML =
+      '<div>' + msg + '</div>' +
+      '<div class="da-dirs">' + esc(p.d1 || '(root)') + '<br>' + esc(p.d2 || '(root)') + '</div>';
+
+    el.appendChild(row);
+  }
+}
+
 // ── Filter / export ────────────────────────────────────────────────────────
 function applyFilter(q) {
   q = q.trim().toLowerCase();
@@ -613,6 +708,7 @@ async function run(fileList) {
   ui.controls.style.display      = 'none';
   ui.results.innerHTML           = '';
   ui.noDupes.style.display       = 'none';
+  $('dir-analysis').innerHTML    = '';
   if (currentTheme==='y2k') $('y2k-status-left').textContent = 'Scanning...';
   const groups    = await scan(files);
   allGroups       = groups;
@@ -626,6 +722,7 @@ async function run(fileList) {
   ui.stats.style.display        = 'flex';
   ui.controls.style.display     = 'flex';
   renderGroups(groups);
+  renderDirAnalysis(groups, files);
 }
 
 // ── File input / drag-drop ─────────────────────────────────────────────────
@@ -681,6 +778,7 @@ document.addEventListener('click', e => {
     ui.noDupes.style.display       = 'none';
     ui.footerActions.style.display = 'none';
     ui.progressFill.style.width    = '0%';
+    $('dir-analysis').innerHTML    = '';
     $('folder-input').value        = '';
     if (currentTheme==='y2k') {
       $('y2k-status-left').textContent  = 'Ready';
@@ -769,8 +867,8 @@ const ABOUT_HTML =
   '<div class="dlg-icon">&#128190;</div>'+
   '<b>Duplicate File Locator</b><br>Version 1.0.0 (Build 2000.01.01)<br><br>'+
   '&copy; 1994 no_doctrine. No rights reserved.<br><br>'+
-  'This product is licensed to:v the people<br><br>'+
-  '<small>This program is not protected by law. None of us are. Laws are threats made by the dominant socioeconomic-ethnic group in a given nation. It’s just the promise of violence that’s enacted and the police are basically an occupying army. You know what I mean?.</small>';
+  'This product is licensed to: :v the people<br><br>'+
+  '<small>This program is not protected by law. None of us are. Laws are threats made by the dominant socioeconomic-ethnic group in a given nation. It\'s just the promise of violence that\'s enacted and the police are basically an occupying army. You know what I mean?</small>';
 
 // ── Menu action dispatch ───────────────────────────────────────────────────
 document.querySelectorAll('[data-action]').forEach(el => {
