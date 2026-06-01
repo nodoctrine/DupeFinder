@@ -239,7 +239,7 @@ button {
 [data-theme="y2k"] #search { border:2px inset #808080; font-family:'Tahoma',sans-serif; background:#fff; }
 
 /* ── Results ── */
-#results { margin-top:24px; }
+#results { margin-top:4px; }
 #no-dupes {
   display:none; padding:32px; text-align:center;
   font-family:var(--mono); font-size:13px; color:var(--ok);
@@ -291,6 +291,31 @@ button {
 
 /* ── Footer ── */
 /* footer-actions removed - export button now in controls bar */
+
+.dir-section { margin-bottom:16px; }
+.dir-section-header {
+  font-family:var(--mono); font-size:11px; font-weight:600;
+  color:var(--muted); text-transform:uppercase; letter-spacing:0.1em;
+  padding:6px 0 6px 2px; border-bottom:1px solid var(--border);
+  margin-bottom:6px; word-break:break-all;
+}
+[data-theme="y2k"] .dir-section-header {
+  font-family:'Tahoma',sans-serif; text-transform:none; letter-spacing:0;
+  border-bottom:1px solid #808080;
+}
+[data-theme="terminal"] .dir-section-header { border-bottom-color:var(--border2); color:var(--accent); }
+.sort-btn {
+  font-family:var(--mono); font-size:10px; padding:2px 8px;
+  border-radius:var(--btn-r); cursor:pointer; border:1px solid var(--border2);
+  background:transparent; color:var(--muted); letter-spacing:0.04em;
+  text-transform:uppercase; transition:all 0.1s; flex-shrink:0;
+}
+.sort-btn:hover,.sort-btn.active { background:var(--accent); border-color:var(--accent); color:var(--bg); }
+[data-theme="y2k"] .sort-btn {
+  font-family:'Tahoma',sans-serif; text-transform:none; letter-spacing:0;
+  border:2px outset #e0ddd8; background:#d4d0c8; color:#000; font-size:10px;
+}
+[data-theme="y2k"] .sort-btn.active,[data-theme="y2k"] .sort-btn:hover { background:#000080; color:#fff; border-style:inset; }
 
 /* ── Directory analysis ── */
 #dir-analysis { margin-top:20px; }
@@ -476,6 +501,8 @@ button {
     <div id="file-list-toggle" class="da-toggle">
       <span class="da-toggle-label">File Size Analysis</span>
       <span class="da-toggle-count" id="file-list-count">0 groups</span>
+      <button class="sort-btn active" id="sort-size" title="Sort by wasted space">Size</button>
+      <button class="sort-btn" id="sort-dir" title="Group by directory">Directory</button>
       <span class="da-chevron">&#9654;</span>
     </div>
     <div id="file-list-body" class="da-body">
@@ -688,7 +715,7 @@ async function scan(files) {
   const groups = [];
   for (const [hash,entries] of hashMap.entries())
     if (entries.length > 1) groups.push({hash, size:entries[0].size, files:entries});
-  groups.sort((a,b) => (b.size*(b.files.length-1))-(a.size*(a.files.length-1)));
+  groups.sort((a,b) => b.files.length - a.files.length);
   return groups;
 }
 
@@ -705,43 +732,84 @@ function renderGroups(groups) {
   wrapper.style.display = 'block';
   $('file-list-count').textContent =
     groups.length + ' group' + (groups.length !== 1 ? 's' : '');
+  if (sortMode === 'dir') { renderGroupsByDir(groups); return; }
+  const autoOpen = groups.length <= 10;
   for (const g of groups) {
-    const wasted = g.size*(g.files.length-1);
-    const block  = document.createElement('div');
-    block.className = 'group-block';
-    const header = document.createElement('div');
-    header.className = 'group-header';
-    header.innerHTML =
-      '<span class="group-name">'+esc(g.files[0].name)+'</span>'+
-      '<span class="group-size">'+fmtSize(g.size)+'</span>'+
-      '<span class="group-count">'+g.files.length+' copies</span>'+
-      '<span class="group-wasted">+'+fmtSize(wasted)+'</span>'+
-      '<span class="group-chevron">&#9654;</span>';
-    const body = document.createElement('div');
-    body.className = 'group-body';
-    for (const f of g.files) {
-      const row = document.createElement('div');
-      row.className = 'file-row';
-      row.innerHTML =
-        '<span class="file-path">'+
-          '<span class="path-dir">'+esc(dirPart(f.path))+'</span>'+
-          '<span class="path-name">'+esc(namePart(f.path))+'</span>'+
-        '</span>'+
-        '<span class="hash-tag">'+fmtHash(g.hash)+'</span>';
-      body.appendChild(row);
-    }
-    header.addEventListener('click', () => {
-      header.classList.toggle('open');
-      body.classList.toggle('open');
-    });
-    if (groups.length <= 10) { header.classList.add('open'); body.classList.add('open'); }
-    block.appendChild(header);
-    block.appendChild(body);
-    ui.results.appendChild(block);
+    ui.results.appendChild(buildGroupBlock(g, autoOpen));
   }
   if (currentTheme === 'y2k') {
     $('y2k-status-left').textContent  = groups.length+' duplicate group(s) found';
     $('y2k-status-right').textContent = allGroups.reduce((n,g)=>n+g.files.length,0)+' objects';
+  }
+}
+
+// ── Sort state ─────────────────────────────────────────────────────────────
+let sortMode = 'size'; // 'size' | 'dir'
+
+// shared helper: build a group-block DOM element
+function buildGroupBlock(g, autoOpen) {
+  const wasted = g.size * (g.files.length - 1);
+  const block  = document.createElement('div');
+  block.className = 'group-block';
+  const header = document.createElement('div');
+  header.className = 'group-header';
+  header.innerHTML =
+    '<span class="group-name">'+esc(g.files[0].name)+'</span>'+
+    '<span class="group-size">'+fmtSize(g.size)+'</span>'+
+    '<span class="group-count">'+g.files.length+' copies</span>'+
+    '<span class="group-wasted">+'+fmtSize(wasted)+'</span>'+
+    '<span class="group-chevron">&#9654;</span>';
+  const body = document.createElement('div');
+  body.className = 'group-body';
+  for (const f of g.files) {
+    const row = document.createElement('div');
+    row.className = 'file-row';
+    row.innerHTML =
+      '<span class="file-path">'+
+        '<span class="path-dir">'+esc(dirPart(f.path))+'</span>'+
+        '<span class="path-name">'+esc(namePart(f.path))+'</span>'+
+      '</span>'+
+      '<span class="hash-tag">'+fmtHash(g.hash)+'</span>';
+    body.appendChild(row);
+  }
+  header.addEventListener('click', () => {
+    header.classList.toggle('open');
+    body.classList.toggle('open');
+  });
+  if (autoOpen) { header.classList.add('open'); body.classList.add('open'); }
+  block.appendChild(header);
+  block.appendChild(body);
+  return block;
+}
+
+function renderGroupsByDir(groups) {
+  ui.results.innerHTML = '';
+  // collect all dirs that appear in any group, preserving insertion order
+  const dirGroupsMap = new Map();
+  for (const g of groups) {
+    const dirs = [...new Set(g.files.map(f => dirPart(f.path)))];
+    for (const d of dirs) {
+      const bucket = dirGroupsMap.get(d) ?? [];
+      bucket.push(g);
+      dirGroupsMap.set(d, bucket);
+    }
+  }
+  // sort dirs by number of duplicate groups descending
+  const sorted = [...dirGroupsMap.entries()].sort((a, b) => b[1].length - a[1].length);
+  for (const [dir, dirGroups] of sorted) {
+    const section = document.createElement('div');
+    section.className = 'dir-section';
+    const heading = document.createElement('div');
+    heading.className = 'dir-section-header';
+    heading.textContent = dir || '(root)';
+    section.appendChild(heading);
+    // within each dir, sort groups by copy count
+    const sorted = [...dirGroups].sort((a, b) => b.files.length - a.files.length);
+    const autoOpen = sorted.length <= 10;
+    for (const g of sorted) {
+      section.appendChild(buildGroupBlock(g, autoOpen));
+    }
+    ui.results.appendChild(section);
   }
 }
 
@@ -1449,7 +1517,7 @@ async function termRun(fileList) {
   const groups=[];
   for (const [hash,entries] of hashMap.entries())
     if (entries.length>1) groups.push({hash,size:entries[0].size,files:entries});
-  groups.sort((a,b)=>(b.size*(b.files.length-1))-(a.size*(a.files.length-1)));
+  groups.sort((a,b)=>b.files.length-a.files.length);
   allGroups=groups;
 
   tBlank();
@@ -1483,6 +1551,16 @@ $('term-shell').addEventListener('click', () => termInput.focus());
 $('file-list-toggle').addEventListener('click', () => {
   $('file-list-toggle').classList.toggle('open');
   $('file-list-body').classList.toggle('open');
+});
+
+['sort-size','sort-dir'].forEach(id => {
+  $(id).addEventListener('click', e => {
+    e.stopPropagation();
+    sortMode = id === 'sort-size' ? 'size' : 'dir';
+    $('sort-size').classList.toggle('active', sortMode === 'size');
+    $('sort-dir').classList.toggle('active', sortMode === 'dir');
+    if (allGroups.length) renderGroups(allGroups);
+  });
 });
 
 applyTheme(currentTheme);
