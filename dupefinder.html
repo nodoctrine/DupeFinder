@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dupe Finder</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0e0e0e;
+    --surface:   #161616;
+    --border:    #2a2a2a;
+    --border2:   #333;
+    --text:      #d4d4d4;
+    --muted:     #666;
+    --accent:    #e8c84a;
+    --accent2:   #c8a830;
+    --danger:    #e05a4e;
+    --ok:        #5ab88a;
+    --mono:      'IBM Plex Mono', monospace;
+    --sans:      'IBM Plex Sans', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ── Header ── */
+  header {
+    padding: 28px 40px 22px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+
+  header h1 {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  header span {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  /* ── Main layout ── */
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 36px 40px;
+  }
+
+  /* ── Drop zone ── */
+  #dropzone {
+    border: 1px dashed var(--border2);
+    border-radius: 4px;
+    padding: 48px 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    position: relative;
+    background: var(--surface);
+  }
+
+  #dropzone:hover,
+  #dropzone.dragover {
+    border-color: var(--accent);
+    background: #1a1a10;
+  }
+
+  #dropzone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  #dropzone-label {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  #dropzone-label strong {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  #dropzone-label .sub {
+    display: block;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #444;
+  }
+
+  /* ── Progress ── */
+  #progress-wrap {
+    display: none;
+    margin-top: 24px;
+  }
+
+  #progress-bar-track {
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+
+  #progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.1s linear;
+  }
+
+  #progress-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 8px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ── Stats bar ── */
+  #stats {
+    display: none;
+    margin-top: 28px;
+    padding: 14px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+    display: none;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+
+  .stat-item { display: flex; flex-direction: column; gap: 4px; }
+  .stat-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; }
+  .stat-value { color: var(--text); font-size: 15px; font-weight: 600; }
+  .stat-value.warn { color: var(--accent); }
+  .stat-value.ok   { color: var(--ok); }
+
+  /* ── Controls ── */
+  #controls {
+    display: none;
+    margin-top: 20px;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  button {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    border: 1px solid;
+    transition: background 0.12s, color 0.12s;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #111;
+  }
+  .btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--border2);
+    color: var(--muted);
+  }
+  .btn-ghost:hover { border-color: var(--text); color: var(--text); }
+
+  #search-wrap {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #search {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 3px;
+    color: var(--text);
+    padding: 7px 12px;
+    width: 220px;
+    outline: none;
+  }
+  #search:focus { border-color: var(--accent); }
+  #search::placeholder { color: #444; }
+
+  /* ── Results ── */
+  #results {
+    margin-top: 28px;
+  }
+
+  #no-dupes {
+    display: none;
+    padding: 32px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ok);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+  }
+
+  .group-block {
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .group-header {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 16px;
+    align-items: center;
+    padding: 12px 16px;
+    background: #131313;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+  .group-header:hover { background: #181818; }
+
+  .group-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .group-size {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .group-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 2px;
+    background: #2a1f00;
+    color: var(--accent);
+    border: 1px solid #3d2e00;
+    white-space: nowrap;
+  }
+
+  .group-wasted {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--danger);
+    white-space: nowrap;
+  }
+
+  .group-chevron {
+    font-size: 10px;
+    color: var(--muted);
+    transition: transform 0.15s;
+    flex-shrink: 0;
+  }
+  .group-header.open .group-chevron { transform: rotate(90deg); }
+
+  .group-body {
+    display: none;
+  }
+  .group-body.open { display: block; }
+
+  .file-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .file-row:last-child { border-bottom: none; }
+  .file-row:hover { background: #1a1a1a; }
+
+  .file-path {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    word-break: break-all;
+  }
+
+  .file-path .path-dir  { color: #555; }
+  .file-path .path-name { color: var(--text); }
+
+  .hash-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: #444;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ── Footer ── */
+  #footer-actions {
+    display: none;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    gap: 10px;
+  }
+
+  /* ── Utility ── */
+  .hidden { display: none !important; }
+  .flex   { display: flex; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Dupe Finder</h1>
+  <span>SHA-256 content hash · local only · no uploads</span>
+</header>
+
+<main>
+
+  <div id="dropzone">
+    <input type="file" id="folder-input" webkitdirectory multiple accept="*">
+    <div id="dropzone-label">
+      <strong>Select a folder</strong> or drag and drop it here
+      <span class="sub">Scans all files recursively. Nothing leaves your browser.</span>
+    </div>
+  </div>
+
+  <div id="progress-wrap">
+    <div id="progress-bar-track">
+      <div id="progress-bar-fill"></div>
+    </div>
+    <div id="progress-label">
+      <span id="progress-text">Scanning...</span>
+      <span id="progress-count"></span>
+    </div>
+  </div>
+
+  <div id="stats" class="flex">
+    <div class="stat-item">
+      <span class="stat-label">Files scanned</span>
+      <span class="stat-value" id="stat-total">—</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Duplicate groups</span>
+      <span class="stat-value warn" id="stat-groups">—</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Duplicate files</span>
+      <span class="stat-value warn" id="stat-dupes">—</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Wasted space</span>
+      <span class="stat-value warn" id="stat-wasted">—</span>
+    </div>
+  </div>
+
+  <div id="controls" class="flex">
+    <button class="btn-ghost" id="btn-reset">Reset</button>
+    <div id="search-wrap">
+      <input type="text" id="search" placeholder="Filter by filename or path...">
+    </div>
+  </div>
+
+  <div id="results"></div>
+  <div id="no-dupes">No duplicates found.</div>
+
+  <div id="footer-actions" class="flex">
+    <button class="btn-primary" id="btn-export">Export CSV</button>
+  </div>
+
+</main>
+
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+
+const ui = {
+  dropzone:      $('dropzone'),
+  folderInput:   $('folder-input'),
+  progressWrap:  $('progress-wrap'),
+  progressFill:  $('progress-bar-fill'),
+  progressText:  $('progress-text'),
+  progressCount: $('progress-count'),
+  stats:         $('stats'),
+  statTotal:     $('stat-total'),
+  statGroups:    $('stat-groups'),
+  statDupes:     $('stat-dupes'),
+  statWasted:    $('stat-wasted'),
+  controls:      $('controls'),
+  search:        $('search'),
+  results:       $('results'),
+  noDupes:       $('no-dupes'),
+  footerActions: $('footer-actions'),
+  btnReset:      $('btn-reset'),
+  btnExport:     $('btn-export'),
+};
+
+// ── State ──────────────────────────────────────────────────────────────────
+let allGroups = [];   // [{hash, size, files:[{name,path}]}]
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function fmtSize(bytes) {
+  if (bytes === 0) return '0 B';
+  const u = ['B','KB','MB','GB','TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return (bytes / Math.pow(1024, i)).toFixed(i ? 1 : 0) + ' ' + u[i];
+}
+
+function fmtHash(hex) {
+  return hex.slice(0, 8) + '…';
+}
+
+async function sha256(file) {
+  const buf = await file.arrayBuffer();
+  const digest = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(digest))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function getPath(file) {
+  // webkitRelativePath = "folderName/sub/file.txt"
+  return file.webkitRelativePath || file.name;
+}
+
+function dirPart(path) {
+  const i = path.lastIndexOf('/');
+  return i >= 0 ? path.slice(0, i + 1) : '';
+}
+
+function namePart(path) {
+  const i = path.lastIndexOf('/');
+  return i >= 0 ? path.slice(i + 1) : path;
+}
+
+// ── Core scan ─────────────────────────────────────────────────────────────
+async function scan(files) {
+  const total = files.length;
+  const hashMap = new Map();   // hash -> [{name, path, size}]
+  const sizeMap = new Map();   // size -> [file] (pre-filter)
+
+  // Group by size first — no point hashing unique sizes
+  for (const f of files) {
+    const bucket = sizeMap.get(f.size) ?? [];
+    bucket.push(f);
+    sizeMap.set(f.size, bucket);
+  }
+
+  const candidates = [];
+  for (const bucket of sizeMap.values()) {
+    if (bucket.length > 1) candidates.push(...bucket);
+  }
+
+  // Files that share no size with anything else are unique by definition
+  const skipped = total - candidates.length;
+
+  let done = 0;
+  for (const f of candidates) {
+    const hash = await sha256(f);
+    const path = getPath(f);
+    const entry = { name: f.name, path, size: f.size };
+    const bucket = hashMap.get(hash) ?? [];
+    bucket.push(entry);
+    hashMap.set(hash, bucket);
+
+    done++;
+    const pct = Math.round(((done + skipped) / total) * 100);
+    ui.progressFill.style.width = pct + '%';
+    ui.progressText.textContent = `Hashing ${f.name}`;
+    ui.progressCount.textContent = `${done + skipped} / ${total}`;
+
+    // yield to browser so UI updates
+    if (done % 20 === 0) await new Promise(r => setTimeout(r, 0));
+  }
+
+  // Build groups
+  const groups = [];
+  for (const [hash, entries] of hashMap.entries()) {
+    if (entries.length > 1) {
+      groups.push({ hash, size: entries[0].size, files: entries });
+    }
+  }
+
+  // Sort: most wasted space first
+  groups.sort((a, b) =>
+    (b.size * (b.files.length - 1)) - (a.size * (a.files.length - 1))
+  );
+
+  return groups;
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function renderGroups(groups) {
+  ui.results.innerHTML = '';
+
+  if (groups.length === 0) {
+    ui.noDupes.style.display = 'block';
+    ui.footerActions.style.display = 'none';
+    return;
+  }
+
+  ui.noDupes.style.display = 'none';
+  ui.footerActions.style.display = 'flex';
+
+  for (const g of groups) {
+    const wasted = g.size * (g.files.length - 1);
+    const block = document.createElement('div');
+    block.className = 'group-block';
+
+    const header = document.createElement('div');
+    header.className = 'group-header';
+    header.innerHTML = `
+      <span class="group-name">${escHtml(g.files[0].name)}</span>
+      <span class="group-size">${fmtSize(g.size)}</span>
+      <span class="group-count">${g.files.length} copies</span>
+      <span class="group-wasted">+${fmtSize(wasted)}</span>
+      <span class="group-chevron">▶</span>
+    `;
+
+    const body = document.createElement('div');
+    body.className = 'group-body';
+
+    for (const f of g.files) {
+      const dir  = dirPart(f.path);
+      const name = namePart(f.path);
+      const row  = document.createElement('div');
+      row.className = 'file-row';
+      row.innerHTML = `
+        <span class="file-path">
+          <span class="path-dir">${escHtml(dir)}</span><span class="path-name">${escHtml(name)}</span>
+        </span>
+        <span class="hash-tag">${fmtHash(g.hash)}</span>
+      `;
+      body.appendChild(row);
+    }
+
+    header.addEventListener('click', () => {
+      header.classList.toggle('open');
+      body.classList.toggle('open');
+    });
+
+    // default open for small result sets
+    if (groups.length <= 10) {
+      header.classList.add('open');
+      body.classList.add('open');
+    }
+
+    block.appendChild(header);
+    block.appendChild(body);
+    ui.results.appendChild(block);
+  }
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Filter ─────────────────────────────────────────────────────────────────
+function applyFilter(query) {
+  const q = query.trim().toLowerCase();
+  if (!q) { renderGroups(allGroups); return; }
+  const filtered = allGroups.filter(g =>
+    g.files.some(f =>
+      f.name.toLowerCase().includes(q) ||
+      f.path.toLowerCase().includes(q)
+    )
+  );
+  renderGroups(filtered);
+}
+
+// ── Export ─────────────────────────────────────────────────────────────────
+function exportCSV() {
+  const rows = [['hash', 'filename', 'path', 'size_bytes', 'copies']];
+  for (const g of allGroups) {
+    for (const f of g.files) {
+      rows.push([g.hash, f.name, f.path, g.size, g.files.length]);
+    }
+  }
+  const csv = rows.map(r =>
+    r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')
+  ).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'duplicates.csv';
+  a.click();
+}
+
+// ── Entry ──────────────────────────────────────────────────────────────────
+async function run(fileList) {
+  const files = Array.from(fileList).filter(f => f.size > 0);
+  if (!files.length) return;
+
+  // show progress, hide drop zone
+  ui.dropzone.style.display = 'none';
+  ui.progressWrap.style.display = 'block';
+  ui.stats.style.display = 'none';
+  ui.controls.style.display = 'none';
+  ui.results.innerHTML = '';
+  ui.noDupes.style.display = 'none';
+
+  const groups = await scan(files);
+  allGroups = groups;
+
+  // stats
+  const dupeCount = groups.reduce((n, g) => n + g.files.length, 0);
+  const wasted    = groups.reduce((n, g) => n + g.size * (g.files.length - 1), 0);
+
+  ui.statTotal.textContent  = files.length.toLocaleString();
+  ui.statGroups.textContent = groups.length.toLocaleString();
+  ui.statDupes.textContent  = dupeCount.toLocaleString();
+  ui.statWasted.textContent = fmtSize(wasted);
+
+  ui.progressWrap.style.display = 'none';
+  ui.stats.style.display = 'flex';
+  ui.controls.style.display = 'flex';
+
+  renderGroups(groups);
+}
+
+// ── Events ─────────────────────────────────────────────────────────────────
+ui.folderInput.addEventListener('change', e => {
+  run(e.target.files);
+});
+
+ui.dropzone.addEventListener('dragover', e => {
+  e.preventDefault();
+  ui.dropzone.classList.add('dragover');
+});
+
+ui.dropzone.addEventListener('dragleave', () => {
+  ui.dropzone.classList.remove('dragover');
+});
+
+ui.dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  ui.dropzone.classList.remove('dragover');
+  if (e.dataTransfer.items) {
+    // Drag-drop folder: collect all file entries recursively
+    const entries = Array.from(e.dataTransfer.items)
+      .map(i => i.webkitGetAsEntry())
+      .filter(Boolean);
+    collectEntries(entries).then(files => {
+      if (files.length) run(files);
+    });
+  }
+});
+
+async function collectEntries(entries) {
+  const files = [];
+  async function walk(entry, path) {
+    if (entry.isFile) {
+      const file = await new Promise(r => entry.file(r));
+      // Attach a fake webkitRelativePath for drag-drop
+      Object.defineProperty(file, 'webkitRelativePath', {
+        value: path + file.name, writable: false
+      });
+      files.push(file);
+    } else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      let batch;
+      do {
+        batch = await new Promise(r => reader.readEntries(r));
+        for (const e of batch) await walk(e, path + entry.name + '/');
+      } while (batch.length > 0);
+    }
+  }
+  for (const e of entries) await walk(e, '');
+  return files;
+}
+
+ui.search.addEventListener('input', e => applyFilter(e.target.value));
+
+ui.btnReset.addEventListener('click', () => {
+  allGroups = [];
+  ui.dropzone.style.display = '';
+  ui.stats.style.display = 'none';
+  ui.controls.style.display = 'none';
+  ui.results.innerHTML = '';
+  ui.noDupes.style.display = 'none';
+  ui.footerActions.style.display = 'none';
+  ui.progressFill.style.width = '0%';
+  ui.folderInput.value = '';
+});
+
+ui.btnExport.addEventListener('click', exportCSV);
+</script>
+</body>
+</html>
