@@ -173,7 +173,7 @@ header span { font-size:11px; color:var(--muted); font-family:var(--mono); }
 #dropzone:hover,#dropzone.dragover { border-color:var(--accent); background:var(--dz-hover); }
 [data-theme="terminal"] #dropzone:hover,[data-theme="terminal"] #dropzone.dragover { box-shadow:0 0 16px rgba(0,255,65,0.15); }
 [data-theme="y2k"] #dropzone { border:2px inset #808080; background:#fff; }
-#dropzone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+#dropzone { cursor:pointer; }
 #dropzone-label { font-family:var(--mono); font-size:13px; color:var(--muted); pointer-events:none; }
 [data-theme="y2k"] #dropzone-label { font-family:'Tahoma',sans-serif; color:#000; }
 #dropzone-label strong { color:var(--accent); font-weight:500; }
@@ -290,19 +290,37 @@ button {
 .hash-tag { font-family:var(--mono); font-size:10px; color:var(--muted); opacity:0.5; white-space:nowrap; flex-shrink:0; }
 
 /* ── Footer ── */
-#footer-actions { display:none; margin-top:24px; padding-top:18px; border-top:1px solid var(--border); gap:10px; }
+/* footer-actions removed - export button now in controls bar */
 
 /* ── Directory analysis ── */
-#dir-analysis { margin-top:24px; }
+#dir-analysis { margin-top:20px; }
 #dir-analysis:empty { display:none; }
-.da-header {
-  font-family:var(--mono); font-size:11px; font-weight:600;
-  text-transform:uppercase; letter-spacing:0.1em; color:var(--muted);
-  margin-bottom:10px;
+#file-list { display:none; margin-top:8px; }
+.da-toggle {
+  display:flex; align-items:center; gap:8px; padding:10px 14px;
+  background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius);
+  cursor:pointer; user-select:none; transition:background 0.1s;
 }
-[data-theme="y2k"] .da-header { font-family:'Tahoma',sans-serif; text-transform:none; letter-spacing:0; font-weight:bold; }
+.da-toggle:hover { background:var(--gh-hover); }
+[data-theme="y2k"] .da-toggle { border:2px outset #e0ddd8; background:#d4d0c8; font-family:'Tahoma',sans-serif; }
+[data-theme="y2k"] .da-toggle:hover { background:#c8c4bc; }
+.da-toggle-label {
+  font-family:var(--mono); font-size:11px; font-weight:600;
+  text-transform:uppercase; letter-spacing:0.1em; color:var(--text); flex:1;
+}
+[data-theme="y2k"] .da-toggle-label { font-family:'Tahoma',sans-serif; text-transform:none; letter-spacing:0; font-weight:bold; }
+.da-toggle-count {
+  font-family:var(--mono); font-size:11px; padding:2px 8px;
+  background:var(--accent-bg); color:var(--accent); border:1px solid var(--accent-bd);
+}
+[data-theme="y2k"] .da-toggle-count { background:#ffff00; color:#000080; border-color:#808000; font-family:'Tahoma',sans-serif; }
+.da-chevron { font-size:9px; color:var(--muted); transition:transform 0.15s; }
+.da-toggle.open .da-chevron { transform:rotate(90deg); }
+[data-theme="y2k"] .da-chevron { color:#000; }
+.da-body { display:none; margin-top:4px; }
+.da-body.open { display:block; }
 .da-row {
-  padding:10px 14px; margin-bottom:6px;
+  padding:10px 14px; margin-bottom:4px;
   background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
   font-family:var(--mono); font-size:12px; line-height:1.6;
 }
@@ -319,6 +337,76 @@ button {
   background:var(--danger); color:#fff; border-radius:2px; vertical-align:middle;
 }
 [data-theme="y2k"] .da-all-badge { border-radius:0; }
+
+[data-theme="terminal"] #main-normal { display:none; }
+[data-theme="terminal"] header { display:none; }
+[data-theme="terminal"] #theme-bar { padding:4px 12px; }
+
+/* ── Terminal shell ── */
+#term-shell {
+  display:none;
+  max-width:960px; margin:0 auto;
+  padding:0; font-family:'Courier Prime','Courier New',monospace;
+  font-size:13px; color:#00cc00;
+}
+
+#term-output {
+  flex:1; overflow-y:auto; padding:16px 20px 8px;
+  scrollbar-width:thin; scrollbar-color:#174400 #020d00;
+}
+#term-output::-webkit-scrollbar { width:6px; }
+#term-output::-webkit-scrollbar-track { background:#020d00; }
+#term-output::-webkit-scrollbar-thumb { background:#174400; }
+
+.term-line {
+  line-height:1.55; white-space:pre-wrap; word-break:break-all; min-height:1.55em;
+}
+.term-line.t-dim    { color:#2d6600; }
+.term-line.t-bright { color:#00ff41; }
+.term-line.t-warn   { color:#ff3300; }
+.term-line.t-ok     { color:#00ff99; }
+.term-line.t-cmd    { color:#00ff41; }
+.term-line.t-head   { color:#00ff41; border-bottom:1px solid #0d2900; margin-bottom:4px; padding-bottom:2px; }
+.term-prompt { color:#2d6600; }
+.term-cursor {
+  display:inline-block; width:8px; height:13px;
+  background:#00ff41; vertical-align:middle; margin-left:1px;
+  animation:blink 1s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* ls columns */
+.term-ls-grid {
+  display:grid;
+  grid-template-columns:auto auto 1fr auto;
+  gap:0 16px;
+  margin:2px 0;
+  font-size:12px;
+}
+.term-ls-perm  { color:#2d6600; }
+.term-ls-size  { color:#00cc00; text-align:right; }
+.term-ls-name  { color:#00ff41; }
+.term-ls-name.dup { color:#ff9900; }
+.term-ls-hash  { color:#174400; }
+
+/* diff block */
+.term-diff-block { margin:4px 0 8px; border-left:2px solid #174400; padding-left:10px; }
+.term-diff-a { color:#00cc00; }
+.term-diff-b { color:#2d6600; }
+
+/* input bar */
+#term-inputbar {
+  display:flex; align-items:center;
+  padding:8px 20px; border-top:1px solid #0d2900;
+  background:#010800; gap:6px; flex-shrink:0;
+}
+#term-input-prompt { color:#2d6600; white-space:nowrap; user-select:none; }
+#term-input {
+  flex:1; background:transparent; border:none; outline:none;
+  font-family:'Courier Prime','Courier New',monospace; font-size:13px;
+  color:#00ff41; caret-color:#00ff41;
+}
+#term-input::placeholder { color:#174400; }
 
 .flex { display:flex; }
 </style>
@@ -342,7 +430,6 @@ button {
 
 <div id="main-normal">
   <div id="dropzone">
-    <input type="file" id="folder-input" webkitdirectory multiple accept="*">
     <div id="dropzone-label">
       <strong>Select a folder</strong> or drag and drop it here
       <span class="sub">Scans all files recursively. Nothing leaves your browser.</span>
@@ -360,14 +447,30 @@ button {
   </div>
   <div id="controls" class="flex">
     <button class="btn-ghost" id="btn-reset">Reset</button>
+    <button class="btn-primary" id="btn-export">Export CSV</button>
     <div id="search-wrap"><input type="text" id="search" placeholder="Filter by filename or path..."></div>
   </div>
-  <div id="results"></div>
-  <div id="no-dupes">No duplicates found.</div>
-  <div id="footer-actions" class="flex">
-    <button class="btn-primary" id="btn-export">Export CSV</button>
-  </div>
   <div id="dir-analysis"></div>
+  <div id="file-list">
+    <div id="file-list-toggle" class="da-toggle">
+      <span class="da-toggle-label">File Size Analysis</span>
+      <span class="da-toggle-count" id="file-list-count">0 groups</span>
+      <span class="da-chevron">&#9654;</span>
+    </div>
+    <div id="file-list-body" class="da-body">
+      <div id="results"></div>
+    </div>
+  </div>
+  <div id="no-dupes">No duplicates found.</div>
+</div>
+
+<!-- terminal shell (terminal theme only) -->
+<div id="term-shell">
+  <div id="term-output"></div>
+  <div id="term-inputbar">
+    <span id="term-input-prompt">user@dupefinder:~$</span>
+    <input id="term-input" type="text" autocomplete="off" spellcheck="false" placeholder="type 'help' for commands">
+  </div>
 </div>
 
 <!-- y2k modal dialog -->
@@ -465,22 +568,30 @@ function applyTheme(t) {
   document.body.setAttribute('data-theme', t);
   localStorage.setItem('df-theme', t);
   document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.t === t));
-  const isY2K = t === 'y2k';
-  $('main-normal').style.display = isY2K ? 'none' : '';
-  $('y2k-window').style.display  = isY2K ? 'block' : 'none';
+  const isY2K      = t === 'y2k';
+  const isTerminal = t === 'terminal';
+  $('main-normal').style.display  = (isY2K || isTerminal) ? 'none' : '';
+  $('y2k-window').style.display   = isY2K      ? 'block' : 'none';
+  $('term-shell').style.display   = isTerminal ? 'flex'  : 'none';
+  if (isTerminal) {
+    $('term-shell').style.flexDirection = 'column';
+    $('term-shell').style.height = 'calc(100vh - 34px)';
+    termBoot();
+    setTimeout(() => termInput.focus(), 100);
+  }
   if (isY2K) syncY2K();
 }
 
 function syncY2K() {
   const inner = $('y2k-inner');
   inner.innerHTML = '';
-  ['dropzone','progress-wrap','stats','controls','results','no-dupes','footer-actions','dir-analysis']
+  ['dropzone','progress-wrap','stats','controls','dir-analysis','file-list','no-dupes']
     .forEach(id => { const el=$(id); if(el) inner.appendChild(el); });
 }
 
 function unsyncY2K() {
   const normal = $('main-normal');
-  ['dropzone','progress-wrap','stats','controls','results','no-dupes','footer-actions','dir-analysis']
+  ['dropzone','progress-wrap','stats','controls','dir-analysis','file-list','no-dupes']
     .forEach(id => { const el=$(id); if(el && el.parentNode !== normal) normal.appendChild(el); });
 }
 
@@ -508,7 +619,6 @@ const ui = {
   get search()        { return $('search'); },
   get results()       { return $('results'); },
   get noDupes()       { return $('no-dupes'); },
-  get footerActions() { return $('footer-actions'); },
 };
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -564,13 +674,16 @@ async function scan(files) {
 // ── Render ─────────────────────────────────────────────────────────────────
 function renderGroups(groups) {
   ui.results.innerHTML = '';
+  const wrapper = $('file-list');
   if (!groups.length) {
-    ui.noDupes.style.display       = 'block';
-    ui.footerActions.style.display = 'none';
+    wrapper.style.display = 'none';
+    ui.noDupes.style.display = 'block';
     return;
   }
-  ui.noDupes.style.display       = 'none';
-  ui.footerActions.style.display = 'flex';
+  ui.noDupes.style.display = 'none';
+  wrapper.style.display = 'block';
+  $('file-list-count').textContent =
+    groups.length + ' group' + (groups.length !== 1 ? 's' : '');
   for (const g of groups) {
     const wasted = g.size*(g.files.length-1);
     const block  = document.createElement('div');
@@ -617,15 +730,12 @@ function renderDirAnalysis(groups, allScannedFiles) {
   el.innerHTML = '';
   if (!groups.length) return;
 
-  // Count total files per directory across the full scan
   const dirTotals = new Map();
   for (const f of allScannedFiles) {
     const d = dirPart(getPath(f));
     dirTotals.set(d, (dirTotals.get(d) ?? 0) + 1);
   }
 
-  // For each duplicate group, generate all unordered dir pairs
-  // pairMap: "dirA|||dirB" -> count of shared duplicate files
   const pairMap = new Map();
   for (const g of groups) {
     const dirs = [...new Set(g.files.map(f => dirPart(f.path)))];
@@ -639,42 +749,56 @@ function renderDirAnalysis(groups, allScannedFiles) {
 
   if (!pairMap.size) return;
 
-  // Sort pairs by duplicate count descending
   const pairs = [...pairMap.entries()]
     .map(([key, count]) => {
       const [d1, d2] = key.split('|||');
-      // "nearly all" threshold: dupes >= 80% of the smaller dir's file count
-      const smaller  = Math.min(dirTotals.get(d1) ?? 0, dirTotals.get(d2) ?? 0);
+      const smaller   = Math.min(dirTotals.get(d1) ?? 0, dirTotals.get(d2) ?? 0);
       const nearlyAll = smaller > 0 && (count / smaller) >= 0.8;
       return { d1, d2, count, nearlyAll };
     })
+    .filter(p => p.count > 1)
     .sort((a, b) => b.count - a.count);
 
-  const header = document.createElement('div');
-  header.className = 'da-header';
-  header.textContent = 'Directory Analysis';
-  el.appendChild(header);
+  if (!pairs.length) return;
+
+  const hasWarning = pairs.some(p => p.nearlyAll);
+
+  // collapsible toggle bar
+  const toggle = document.createElement('div');
+  toggle.className = 'da-toggle';
+  toggle.innerHTML =
+    '<span class="da-toggle-label">Directory Analysis</span>'+
+    '<span class="da-toggle-count">'+pairs.length+' pair'+(pairs.length!==1?'s':'')+'</span>'+
+    (hasWarning ? '<span class="da-all-badge" style="margin-left:8px">warnings</span>' : '')+
+    '<span class="da-chevron">&#9654;</span>';
+
+  const body = document.createElement('div');
+  body.className = 'da-body';
+
+  toggle.addEventListener('click', () => {
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  });
 
   for (const p of pairs) {
     const row = document.createElement('div');
     row.className = 'da-row' + (p.nearlyAll ? ' da-all' : '');
 
-    const badge = p.nearlyAll
-      ? '<span class="da-all-badge">nearly all</span>'
-      : '';
-
+    const badge = p.nearlyAll ? '<span class="da-all-badge">nearly all</span>' : '';
     const msg = p.nearlyAll
       ? 'All or nearly all files are duplicated between these two directories.' + badge
-      : 'There are <span class="da-count">' + p.count + '</span> file'
-        + (p.count !== 1 ? 's' : '')
-        + ' duplicated between these two directories.';
+      : 'There are <span class="da-count">'+p.count+'</span> file'
+        +(p.count !== 1 ? 's' : '')+' duplicated between these two directories.';
 
     row.innerHTML =
-      '<div>' + msg + '</div>' +
-      '<div class="da-dirs">' + esc(p.d1 || '(root)') + '<br>' + esc(p.d2 || '(root)') + '</div>';
+      '<div>'+msg+'</div>'+
+      '<div class="da-dirs">'+esc(p.d1||'(root)')+'<br>'+esc(p.d2||'(root)')+'</div>';
 
-    el.appendChild(row);
+    body.appendChild(row);
   }
+
+  el.appendChild(toggle);
+  el.appendChild(body);
 }
 
 // ── Filter / export ────────────────────────────────────────────────────────
@@ -721,14 +845,19 @@ async function run(fileList) {
   ui.progressWrap.style.display = 'none';
   ui.stats.style.display        = 'flex';
   ui.controls.style.display     = 'flex';
-  renderGroups(groups);
   renderDirAnalysis(groups, files);
+  renderGroups(groups);
 }
 
 // ── File input / drag-drop ─────────────────────────────────────────────────
-document.addEventListener('change', e => {
-  if (e.target.id === 'folder-input') run(e.target.files);
+document.addEventListener('click', e => {
+  if (currentTheme === 'terminal') return;
+  const dz = $('dropzone');
+  if (dz && (e.target === dz || dz.contains(e.target))) {
+    $('folder-input').click();
+  }
 });
+// folder-input change handled below (terminal-aware)
 document.addEventListener('dragover', e => {
   if ($('dropzone') && ($('dropzone').contains(e.target) || e.target===$('dropzone'))) {
     e.preventDefault(); $('dropzone').classList.add('dragover');
@@ -743,7 +872,11 @@ document.addEventListener('drop', e => {
   if ($('dropzone')) $('dropzone').classList.remove('dragover');
   if (e.dataTransfer.items) {
     const entries = Array.from(e.dataTransfer.items).map(i=>i.webkitGetAsEntry()).filter(Boolean);
-    collectEntries(entries).then(files => { if (files.length) run(files); });
+    collectEntries(entries).then(files => {
+      if (!files.length) return;
+      if (currentTheme === 'terminal') termRun(files);
+      else run(files);
+    });
   }
 });
 async function collectEntries(entries) {
@@ -771,15 +904,15 @@ document.addEventListener('input', e => { if (e.target.id==='search') applyFilte
 document.addEventListener('click', e => {
   if (e.target.id === 'btn-reset') {
     allGroups = [];
-    ui.dropzone.style.display      = '';
-    ui.stats.style.display         = 'none';
-    ui.controls.style.display      = 'none';
-    ui.results.innerHTML           = '';
-    ui.noDupes.style.display       = 'none';
-    ui.footerActions.style.display = 'none';
-    ui.progressFill.style.width    = '0%';
-    $('dir-analysis').innerHTML    = '';
-    $('folder-input').value        = '';
+    ui.dropzone.style.display   = '';
+    ui.stats.style.display      = 'none';
+    ui.controls.style.display   = 'none';
+    ui.results.innerHTML        = '';
+    ui.noDupes.style.display    = 'none';
+    ui.progressFill.style.width = '0%';
+    $('dir-analysis').innerHTML = '';
+    $('file-list').style.display = 'none';
+    $('folder-input').value     = '';
     if (currentTheme==='y2k') {
       $('y2k-status-left').textContent  = 'Ready';
       $('y2k-status-right').textContent = '0 objects';
@@ -970,8 +1103,334 @@ document.querySelectorAll('[data-action]').forEach(el => {
   });
 });
 
+// ── Terminal shell ─────────────────────────────────────────────────────────
+const termOut    = $('term-output');
+const termInput  = $('term-input');
+let termScanFiles = null;
+
+function tLine(text='', cls='') {
+  const d = document.createElement('div');
+  d.className = 'term-line' + (cls ? ' '+cls : '');
+  d.innerHTML = text;
+  termOut.appendChild(d);
+  termOut.scrollTop = termOut.scrollHeight;
+  return d;
+}
+
+function tBlank() { tLine(); }
+
+async function tType(text, cls='t-cmd', delay=18) {
+  const d = tLine('', cls);
+  for (const ch of text) {
+    d.textContent += ch;
+    termOut.scrollTop = termOut.scrollHeight;
+    await new Promise(r => setTimeout(r, delay));
+  }
+  return d;
+}
+
+function termBoot() {
+  termOut.innerHTML = '';
+  tLine('DupeFinder v1.0.0  (SHA-256 file deduplication utility)', 't-head');
+  tLine('Compiled: Jan  1 2000  00:00:00', 't-dim');
+  tLine('Copyright (c) 1994 no_doctrine. No rights reserved.', 't-dim');
+  tBlank();
+  tLine('<span class="term-prompt">$</span> help', 't-cmd');
+  tBlank();
+  tLine('COMMANDS', 't-bright');
+  tLine('  scan &lt;folder&gt;      scan a folder for duplicate files', 't-dim');
+  tLine('  ls                 list duplicate results', 't-dim');
+  tLine('  ls -a              list all scanned files', 't-dim');
+  tLine('  stat               show scan statistics', 't-dim');
+  tLine('  dirs               show directory pair analysis', 't-dim');
+  tLine('  export             write results to duplicates.csv', 't-dim');
+  tLine('  clear              clear terminal output', 't-dim');
+  tLine('  reset              reset scan and clear results', 't-dim');
+  tLine('  help               show this message', 't-dim');
+  tBlank();
+  tLine('Click anywhere on the terminal or press ENTER to begin.', 't-dim');
+  tLine('To scan: type  scan  or click the terminal and select a folder.', 't-dim');
+  tBlank();
+  tLine('<span class="term-prompt">user@dupefinder:~$</span> <span class="term-cursor"></span>', 't-cmd');
+}
+
+function termRenderResults(groups) {
+  if (!groups.length) {
+    tLine('<span class="term-prompt">$</span> ls -dupes', 't-cmd');
+    tLine('no duplicates found.', 't-ok');
+    tBlank();
+    return;
+  }
+  tLine('<span class="term-prompt">$</span> ls -dupes', 't-cmd');
+  tBlank();
+  for (const g of groups) {
+    const wasted = g.size * (g.files.length - 1);
+    tLine(
+      'DUPLICATE  <span class="term-ls-name dup">'+esc(g.files[0].name)+'</span>'+
+      '  <span class="term-ls-size">'+fmtSize(g.size)+'</span>'+
+      '  <span class="t-warn">'+g.files.length+' copies  +'+fmtSize(wasted)+'</span>'+
+      '  <span class="term-ls-hash">'+fmtHash(g.hash)+'</span>'
+    );
+    const block = document.createElement('div');
+    block.className = 'term-diff-block';
+    g.files.forEach((f, i) => {
+      const d = document.createElement('div');
+      d.className = 'term-line ' + (i === 0 ? 'term-diff-a' : 'term-diff-b');
+      d.textContent = (i === 0 ? '  ' : '  ') + f.path;
+      block.appendChild(d);
+    });
+    termOut.appendChild(block);
+    termOut.scrollTop = termOut.scrollHeight;
+  }
+  tBlank();
+}
+
+function termRenderStat(files, groups) {
+  const dupeCount = groups.reduce((n,g)=>n+g.files.length,0);
+  const wasted    = groups.reduce((n,g)=>n+g.size*(g.files.length-1),0);
+  tLine('<span class="term-prompt">$</span> stat', 't-cmd');
+  tBlank();
+  tLine('  files scanned      '+files.length.toLocaleString(), 't-dim');
+  tLine('  duplicate groups   '+groups.length.toLocaleString(), groups.length ? 't-warn' : 't-ok');
+  tLine('  duplicate files    '+dupeCount.toLocaleString(), dupeCount ? 't-warn' : 't-ok');
+  tLine('  wasted space       '+fmtSize(wasted), wasted ? 't-warn' : 't-ok');
+  tBlank();
+}
+
+function termRenderDirs(groups, allFiles) {
+  const dirTotals = new Map();
+  for (const f of allFiles) {
+    const d = dirPart(getPath(f));
+    dirTotals.set(d, (dirTotals.get(d)??0)+1);
+  }
+  const pairMap = new Map();
+  for (const g of groups) {
+    const dirs = [...new Set(g.files.map(f=>dirPart(f.path)))];
+    for (let i=0;i<dirs.length;i++)
+      for (let j=i+1;j<dirs.length;j++) {
+        const key = [dirs[i],dirs[j]].sort().join('|||');
+        pairMap.set(key,(pairMap.get(key)??0)+1);
+      }
+  }
+  const pairs = [...pairMap.entries()]
+    .map(([key,count])=>{
+      const [d1,d2]=key.split('|||');
+      const smaller=Math.min(dirTotals.get(d1)??0,dirTotals.get(d2)??0);
+      const nearly=smaller>0&&(count/smaller)>=0.8;
+      return {d1,d2,count,nearly};
+    })
+    .filter(p=>p.count>1)
+    .sort((a,b)=>b.count-a.count);
+  if (!pairs.length) { tLine('no cross-directory duplicates detected.','t-ok'); tBlank(); return; }
+
+  tLine('<span class="term-prompt">$</span> dirs','t-cmd');
+  tBlank();
+  pairs.forEach(p=>{
+      const flag = p.nearly ? ' <span class="t-warn">[NEARLY ALL]</span>' : '';
+      tLine('  '+p.count+' shared file'+(p.count!==1?'s':'')+flag);
+      tLine('    '+esc(p.d1||'(root)'),'t-dim');
+      tLine('    '+esc(p.d2||'(root)'),'t-dim');
+      tBlank();
+    });
+}
+
+function termHandleCommand(raw) {
+  const cmd = raw.trim().toLowerCase();
+  // echo the command
+  tLine('<span class="term-prompt">user@dupefinder:~$</span> '+esc(raw),'t-cmd');
+
+  if (!cmd || cmd==='') {
+    // just a newline
+  } else if (cmd==='help') {
+    tBlank();
+    tLine('COMMANDS','t-bright');
+    tLine('  scan            open folder picker to scan','t-dim');
+    tLine('  ls              list duplicate groups','t-dim');
+    tLine('  ls -a           list all scanned files','t-dim');
+    tLine('  stat            show statistics','t-dim');
+    tLine('  dirs            directory pair analysis','t-dim');
+    tLine('  export          export results to CSV','t-dim');
+    tLine('  clear           clear output','t-dim');
+    tLine('  reset           reset everything','t-dim');
+    tLine('  help            this message','t-dim');
+    tBlank();
+  } else if (cmd==='scan' || cmd.startsWith('scan ')) {
+    tLine('opening folder selector...','t-dim');
+    $('folder-input').click();
+  } else if (cmd==='ls' || cmd==='ls -dupes') {
+    if (!allGroups.length) {
+      tLine('no results. run  scan  first.','t-warn');
+    } else {
+      termRenderResults(allGroups);
+    }
+  } else if (cmd==='ls -a') {
+    if (!termScanFiles) {
+      tLine('no scan data. run  scan  first.','t-warn');
+    } else {
+      tLine('total '+termScanFiles.length+' files','t-dim');
+      tBlank();
+      const dupeSet = new Set(allGroups.flatMap(g=>g.files.map(f=>f.path)));
+      termScanFiles.forEach(f => {
+        const p = getPath(f);
+        const isDupe = dupeSet.has(p);
+        tLine(
+          '  <span class="term-ls-size">'+fmtSize(f.size).padStart(8)+'</span>  '+
+          '<span class="term-ls-name'+(isDupe?' dup':'')+'">'+esc(p)+'</span>'
+        );
+      });
+      tBlank();
+    }
+  } else if (cmd==='stat') {
+    if (!termScanFiles) {
+      tLine('no scan data. run  scan  first.','t-warn');
+    } else {
+      termRenderStat(termScanFiles, allGroups);
+    }
+  } else if (cmd==='dirs') {
+    if (!termScanFiles) {
+      tLine('no scan data. run  scan  first.','t-warn');
+    } else {
+      termRenderDirs(allGroups, termScanFiles);
+    }
+  } else if (cmd==='export') {
+    if (!allGroups.length) {
+      tLine('nothing to export. run  scan  first.','t-warn');
+    } else {
+      exportCSV();
+      tLine('wrote duplicates.csv','t-ok');
+    }
+  } else if (cmd==='clear') {
+    termOut.innerHTML='';
+  } else if (cmd==='reset') {
+    allGroups=[];
+    termScanFiles=null;
+    $('folder-input').value='';
+    termOut.innerHTML='';
+    termBoot();
+  } else if (cmd==='sudo rm -rf /' || cmd==='rm -rf /') {
+    tLine('nice try.','t-ok');
+  } else if (cmd==='whoami') {
+    tLine('user','t-dim');
+  } else if (cmd==='pwd') {
+    tLine('/home/user/dupefinder','t-dim');
+  } else if (cmd==='uname -a') {
+    tLine('DupeFinder 1.0.0 #1 SMP Jan 1 2000 x86_64 GNU/Linux','t-dim');
+  } else if (cmd==='ls /') {
+    ['bin','dev','etc','home','lib','mnt','proc','root','tmp','usr','var']
+      .forEach(d=>tLine('  '+d,'t-dim'));
+  } else if (cmd==='cat /etc/passwd') {
+    tLine('root:x:0:0:root:/root:/bin/bash','t-dim');
+    tLine('user:x:1000:1000:user:/home/user:/bin/bash','t-dim');
+    tLine('nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin','t-dim');
+  } else if (cmd==='date') {
+    tLine(new Date().toString(),'t-dim');
+  } else if (cmd==='top') {
+    tLine('Tasks: 1 total,  1 running','t-dim');
+    tLine('%Cpu: 0.0 us, 0.0 sy, 100.0 id','t-dim');
+    tLine('MiB Mem: yours','t-dim');
+    tLine();
+    tLine('  PID  USER   COMMAND','t-dim');
+    tLine('    1  user   dupefinder --daemon','t-dim');
+  } else {
+    tLine(cmd+': command not found','t-warn');
+  }
+  tBlank();
+  tLine('<span class="term-prompt">user@dupefinder:~$</span> <span class="term-cursor"></span>','t-cmd');
+}
+
+// hook folder-input into terminal run path
+const _origRun = run;
+async function termRun(fileList) {
+  if (currentTheme !== 'terminal') { await _origRun(fileList); return; }
+  const files = Array.from(fileList).filter(f=>f.size>0);
+  if (!files.length) return;
+  termScanFiles = files;
+  allGroups = [];
+  // remove stale prompt cursor line
+  const lastLine = termOut.lastElementChild;
+  if (lastLine && lastLine.innerHTML.includes('term-cursor')) lastLine.remove();
+
+  tLine('scanning '+files.length+' file'+(files.length!==1?'s':'')+'...','t-dim');
+
+  // progress line we update in place
+  const progLine = tLine('  [                                        ]  0%','t-dim');
+
+  const updateProg = (pct, fname) => {
+    const filled = Math.round(pct/2.5);
+    const bar = '#'.repeat(filled)+' '.repeat(40-filled);
+    progLine.textContent = '  ['+bar+']  '+pct+'%  '+fname;
+  };
+
+  // patch scan to update our progress line
+  const total   = files.length;
+  const sizeMap = new Map();
+  for (const f of files) { const b=sizeMap.get(f.size)??[]; b.push(f); sizeMap.set(f.size,b); }
+  const candidates=[];
+  for (const b of sizeMap.values()) if (b.length>1) candidates.push(...b);
+  const skipped=total-candidates.length;
+  const hashMap=new Map();
+  let done=0;
+  for (const f of candidates) {
+    const hash=await sha256(f);
+    const entry={name:f.name,path:getPath(f),size:f.size};
+    const b=hashMap.get(hash)??[];
+    b.push(entry); hashMap.set(hash,b);
+    done++;
+    updateProg(Math.round(((done+skipped)/total)*100), f.name);
+    if (done%20===0) await new Promise(r=>setTimeout(r,0));
+  }
+  // also account for size-skipped files in progress
+  updateProg(100,'done');
+
+  const groups=[];
+  for (const [hash,entries] of hashMap.entries())
+    if (entries.length>1) groups.push({hash,size:entries[0].size,files:entries});
+  groups.sort((a,b)=>(b.size*(b.files.length-1))-(a.size*(a.files.length-1)));
+  allGroups=groups;
+
+  tBlank();
+  termRenderStat(files, groups);
+  termRenderResults(groups);
+  termRenderDirs(groups, files);
+  tLine('<span class="term-prompt">user@dupefinder:~$</span> <span class="term-cursor"></span>','t-cmd');
+  termInput.focus();
+}
+
+// override the file-input event to use termRun when in terminal theme
+document.removeEventListener('change', null); // no-op, re-bind below
+
+// terminal input handler
+termInput.addEventListener('keydown', e => {
+  if (e.key==='Enter') {
+    const val=termInput.value;
+    termInput.value='';
+    // remove last cursor line before printing command
+    const lastLine=termOut.lastElementChild;
+    if (lastLine && lastLine.innerHTML.includes('term-cursor')) lastLine.remove();
+    termHandleCommand(val);
+    termInput.focus();
+  }
+});
+
+// click anywhere in terminal to focus input
+$('term-shell').addEventListener('click', () => termInput.focus());
+
 // ── Init ───────────────────────────────────────────────────────────────────
+$('file-list-toggle').addEventListener('click', () => {
+  $('file-list-toggle').classList.toggle('open');
+  $('file-list-body').classList.toggle('open');
+});
+
 applyTheme(currentTheme);
-</script>
+
+// re-bind file input to use termRun when terminal
+document.addEventListener('change', e => {
+  if (e.target.id==='folder-input') {
+    if (currentTheme==='terminal') termRun(e.target.files);
+    else run(e.target.files);
+  }
+});</script>
+<!-- folder-input lives outside all theme wrappers so it's always clickable -->
+<input type="file" id="folder-input" webkitdirectory multiple accept="*" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;">
 </body>
 </html>
