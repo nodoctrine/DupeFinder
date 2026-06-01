@@ -337,6 +337,27 @@ button {
   background:var(--danger); color:#fff; border-radius:2px; vertical-align:middle;
 }
 [data-theme="y2k"] .da-all-badge { border-radius:0; }
+.da-row-toggle {
+  display:flex; align-items:center; gap:6px; cursor:pointer;
+  user-select:none; margin-top:6px;
+}
+.da-row-toggle-label {
+  font-size:10px; color:var(--muted); font-family:var(--mono);
+  text-transform:uppercase; letter-spacing:0.08em;
+}
+[data-theme="y2k"] .da-row-toggle-label { font-family:'Tahoma',sans-serif; text-transform:none; letter-spacing:0; }
+.da-row-chevron { font-size:8px; color:var(--muted); transition:transform 0.15s; }
+.da-row-toggle.open .da-row-chevron { transform:rotate(90deg); }
+.da-file-list { display:none; margin-top:6px; border-top:1px solid var(--border); padding-top:6px; }
+.da-file-list.open { display:block; }
+[data-theme="y2k"] .da-file-list { border-top-color:#808080; }
+.da-file-entry {
+  font-family:var(--mono); font-size:11px; padding:2px 0;
+  color:var(--muted); word-break:break-all;
+}
+.da-file-entry .da-file-name { color:var(--text); }
+[data-theme="terminal"] .da-file-entry .da-file-name { color:var(--accent); }
+[data-theme="y2k"] .da-file-entry { font-family:'Courier New',monospace; }
 
 [data-theme="terminal"] #main-normal { display:none; }
 [data-theme="terminal"] header { display:none; }
@@ -742,7 +763,14 @@ function renderDirAnalysis(groups, allScannedFiles) {
     for (let i = 0; i < dirs.length; i++) {
       for (let j = i + 1; j < dirs.length; j++) {
         const key = [dirs[i], dirs[j]].sort().join('|||');
-        pairMap.set(key, (pairMap.get(key) ?? 0) + 1);
+        // collect files from this group that belong to either dir in the pair
+        const pairFiles = g.files.filter(f =>
+          dirPart(f.path) === dirs[i] || dirPart(f.path) === dirs[j]
+        );
+        const entry = pairMap.get(key) ?? { count: 0, files: [] };
+        entry.count++;
+        entry.files.push(...pairFiles);
+        pairMap.set(key, entry);
       }
     }
   }
@@ -750,11 +778,11 @@ function renderDirAnalysis(groups, allScannedFiles) {
   if (!pairMap.size) return;
 
   const pairs = [...pairMap.entries()]
-    .map(([key, count]) => {
+    .map(([key, entry]) => {
       const [d1, d2] = key.split('|||');
       const smaller   = Math.min(dirTotals.get(d1) ?? 0, dirTotals.get(d2) ?? 0);
-      const nearlyAll = smaller > 0 && (count / smaller) >= 0.8;
-      return { d1, d2, count, nearlyAll };
+      const nearlyAll = smaller > 0 && (entry.count / smaller) >= 0.8;
+      return { d1, d2, count: entry.count, files: entry.files, nearlyAll };
     })
     .filter(p => p.count > 1)
     .sort((a, b) => b.count - a.count);
@@ -790,10 +818,46 @@ function renderDirAnalysis(groups, allScannedFiles) {
       : 'There are <span class="da-count">'+p.count+'</span> file'
         +(p.count !== 1 ? 's' : '')+' duplicated between these two directories.';
 
-    row.innerHTML =
+    const rowTop = document.createElement('div');
+    rowTop.innerHTML =
       '<div>'+msg+'</div>'+
       '<div class="da-dirs">'+esc(p.d1||'(root)')+'<br>'+esc(p.d2||'(root)')+'</div>';
 
+    // nested file list toggle
+    const fileToggle = document.createElement('div');
+    fileToggle.className = 'da-row-toggle';
+    fileToggle.innerHTML =
+      '<span class="da-row-chevron">&#9654;</span>'+
+      '<span class="da-row-toggle-label">Show files</span>';
+
+    const fileList = document.createElement('div');
+    fileList.className = 'da-file-list';
+
+    // dedupe by path - a file may appear in multiple groups
+    const seen = new Set();
+    for (const f of p.files) {
+      if (seen.has(f.path)) continue;
+      seen.add(f.path);
+      const entry = document.createElement('div');
+      entry.className = 'da-file-entry';
+      entry.innerHTML =
+        '<span class="path-dir">'+esc(dirPart(f.path))+'</span>'+
+        '<span class="da-file-name">'+esc(namePart(f.path))+'</span>';
+      fileList.appendChild(entry);
+    }
+
+    fileToggle.addEventListener('click', e => {
+      e.stopPropagation();
+      fileToggle.classList.toggle('open');
+      fileList.classList.toggle('open');
+      const label = fileToggle.querySelector('.da-row-toggle-label');
+      label.textContent = fileList.classList.contains('open')
+        ? 'Hide files' : 'Show files';
+    });
+
+    row.appendChild(rowTop);
+    row.appendChild(fileToggle);
+    row.appendChild(fileList);
     body.appendChild(row);
   }
 
