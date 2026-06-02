@@ -293,17 +293,38 @@ button {
 /* footer-actions removed - export button now in controls bar */
 
 .dir-section { margin-bottom:16px; }
-.dir-section-header {
-  font-family:var(--mono); font-size:11px; font-weight:600;
-  color:var(--muted); text-transform:uppercase; letter-spacing:0.1em;
-  padding:6px 0 6px 2px; border-bottom:1px solid var(--border);
-  margin-bottom:6px; word-break:break-all;
+.dir-common-prefix {
+  font-family:var(--mono); font-size:10px; color:var(--muted);
+  padding:4px 2px 8px; word-break:break-all; letter-spacing:0.04em;
 }
-[data-theme="y2k"] .dir-section-header {
-  font-family:'Tahoma',sans-serif; text-transform:none; letter-spacing:0;
-  border-bottom:1px solid #808080;
+[data-theme="y2k"] .dir-common-prefix { font-family:'Courier New',monospace; }
+[data-theme="terminal"] .dir-common-prefix { color:#1a5200; }
+.dir-node { margin-bottom:2px; }
+.dir-node-header {
+  display:flex; align-items:center; gap:6px;
+  padding:5px 8px; cursor:pointer; user-select:none;
+  border-radius:var(--radius); transition:background 0.1s;
 }
-[data-theme="terminal"] .dir-section-header { border-bottom-color:var(--border2); color:var(--accent); }
+.dir-node-header:hover { background:var(--gh-hover); }
+[data-theme="y2k"] .dir-node-header:hover { background:#ece9d8; }
+.dir-node-chevron { font-size:8px; color:var(--muted); transition:transform 0.15s; flex-shrink:0; }
+.dir-node-header.open .dir-node-chevron { transform:rotate(90deg); }
+.dir-node-label {
+  font-family:var(--mono); font-size:12px; font-weight:600; color:var(--text);
+  word-break:break-all;
+}
+[data-theme="y2k"] .dir-node-label { font-family:'Tahoma',sans-serif; }
+[data-theme="terminal"] .dir-node-label { color:var(--accent); }
+.dir-node-badge {
+  font-family:var(--mono); font-size:10px; padding:1px 6px;
+  background:var(--accent-bg); color:var(--accent); border:1px solid var(--accent-bd);
+  flex-shrink:0;
+}
+[data-theme="y2k"] .dir-node-badge { background:#ffff00; color:#000080; border-color:#808000; font-family:'Tahoma',sans-serif; }
+.dir-node-children { display:none; }
+.dir-node-children.open { display:block; }
+.dir-node-groups { padding:4px 0 4px 16px; }
+.dir-node-groups .group-block { margin-bottom:6px; }
 .sort-btn {
   font-family:var(--mono); font-size:10px; padding:2px 8px;
   border-radius:var(--btn-r); cursor:pointer; border:1px solid var(--border2);
@@ -784,32 +805,108 @@ function buildGroupBlock(g, autoOpen) {
 
 function renderGroupsByDir(groups) {
   ui.results.innerHTML = '';
-  // collect all dirs that appear in any group, preserving insertion order
+
+  // collect dir -> groups map
   const dirGroupsMap = new Map();
   for (const g of groups) {
-    const dirs = [...new Set(g.files.map(f => dirPart(f.path)))];
-    for (const d of dirs) {
+    for (const d of [...new Set(g.files.map(f => dirPart(f.path)))]) {
       const bucket = dirGroupsMap.get(d) ?? [];
       bucket.push(g);
       dirGroupsMap.set(d, bucket);
     }
   }
-  // sort dirs by number of duplicate groups descending
-  const sorted = [...dirGroupsMap.entries()].sort((a, b) => b[1].length - a[1].length);
-  for (const [dir, dirGroups] of sorted) {
-    const section = document.createElement('div');
-    section.className = 'dir-section';
-    const heading = document.createElement('div');
-    heading.className = 'dir-section-header';
-    heading.textContent = dir || '(root)';
-    section.appendChild(heading);
-    // within each dir, sort groups by copy count
-    const sorted = [...dirGroups].sort((a, b) => b.files.length - a.files.length);
-    const autoOpen = sorted.length <= 10;
-    for (const g of sorted) {
-      section.appendChild(buildGroupBlock(g, autoOpen));
+
+  // find longest common path prefix across all dirs
+  const allDirs = [...dirGroupsMap.keys()];
+  function commonPrefix(paths) {
+    if (!paths.length) return '';
+    const segs = paths.map(p => p.split('/').filter(Boolean));
+    const min  = Math.min(...segs.map(s => s.length));
+    let i = 0;
+    while (i < min && segs.every(s => s[i] === segs[0][i])) i++;
+    return i ? segs[0].slice(0, i).join('/') + '/' : '';
+  }
+  const prefix = commonPrefix(allDirs);
+
+  // build trie: node = { children: Map<segment, node>, groups: [] }
+  function makeNode() { return { children: new Map(), groups: [] }; }
+  const root = makeNode();
+  for (const [dir, gs] of dirGroupsMap) {
+    const stripped = prefix ? dir.slice(prefix.length) : dir;
+    const segs = stripped.split('/').filter(Boolean);
+    let node = root;
+    for (const seg of segs) {
+      if (!node.children.has(seg)) node.children.set(seg, makeNode());
+      node = node.children.get(seg);
     }
-    ui.results.appendChild(section);
+    // sort groups by copy count before storing
+    node.groups = [...gs].sort((a, b) => b.files.length - a.files.length);
+  }
+
+  // count total groups reachable from a node (for badge)
+  function countGroups(node) {
+    const own = node.groups.length;
+    let sub = 0;
+    for (const child of node.children.values()) sub += countGroups(child);
+    return own + sub;
+  }
+
+  // render a node recursively; depth controls indentation
+  function renderNode(node, label, depth, container) {
+    const total = countGroups(node);
+    const wrapper = document.createElement('div');
+    wrapper.className = 'dir-node';
+    wrapper.style.paddingLeft = (depth * 14) + 'px';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'dir-node-header';
+    hdr.innerHTML =
+      '<span class="dir-node-chevron">&#9654;</span>'+
+      '<span class="dir-node-label">'+esc(label)+'</span>'+
+      '<span class="dir-node-badge">'+total+' group'+(total!==1?'s':'')+'</span>';
+
+    const children = document.createElement('div');
+    children.className = 'dir-node-children';
+
+    hdr.addEventListener('click', () => {
+      hdr.classList.toggle('open');
+      children.classList.toggle('open');
+    });
+
+    // render child nodes sorted by total group count desc
+    const sortedChildren = [...node.children.entries()]
+      .sort((a, b) => countGroups(b[1]) - countGroups(a[1]));
+    for (const [seg, child] of sortedChildren) {
+      renderNode(child, seg, 0, children);
+    }
+
+    // render groups directly in this dir
+    if (node.groups.length) {
+      const groupsWrap = document.createElement('div');
+      groupsWrap.className = 'dir-node-groups';
+      const autoOpen = node.groups.length <= 10;
+      for (const g of node.groups) groupsWrap.appendChild(buildGroupBlock(g, autoOpen));
+      children.appendChild(groupsWrap);
+    }
+
+    wrapper.appendChild(hdr);
+    wrapper.appendChild(children);
+    container.appendChild(wrapper);
+  }
+
+  // show common prefix as context label if present
+  if (prefix) {
+    const pre = document.createElement('div');
+    pre.className = 'dir-common-prefix';
+    pre.textContent = prefix;
+    ui.results.appendChild(pre);
+  }
+
+  // render root's children (skip root itself as a node)
+  const sortedRoots = [...root.children.entries()]
+    .sort((a, b) => countGroups(b[1]) - countGroups(a[1]));
+  for (const [seg, child] of sortedRoots) {
+    renderNode(child, seg, 0, ui.results);
   }
 }
 
